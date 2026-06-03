@@ -1,81 +1,75 @@
-//
-// Created by petitfiloue on 07.05.2026.
-//
-
+﻿#include <optional>
+#include "SFML/Graphics.hpp"
 #include "game.h"
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp>
-
-#include "PerfChecker/FPSCounter.h"
-#include "tileMap/TileMap.h"
-#include "tileMap/TileMapEditor.h"
+#include "tilemap.h"
+#include "graphics/camera.h"
+#include "graphics/tilemap_renderer.h"
+#include "graphics/tilesheet.h"
 
 namespace game {
+    namespace {
+        constexpr sf::Vector2f world_size = {19200.f * 5, 10800.f * 5};
+        constexpr sf::Vector2f window_size_f = {1920.f, 1080.f};
+        constexpr sf::Vector2u window_size_u = {1920u, 1080u};
 
-sf::RenderWindow window;
-TileMap tileMap;
-TileSet tileSet;
-TileMapEditor editor(tileMap);
-FPSCounter fps;
+        sf::Clock clock_;
+        sf::RenderWindow window_;
+        bool isFullscreen_ = false;
 
+        Tilemap map_;
+        graphics::Camera camera_;
 
-void Setup() {
-  window.create(sf::VideoMode::getDesktopMode(), "CityBuilder");
-  window.setFramerateLimit(60);
-
- //if (!tileMap.load("asset/tilemap.png", 32, 25, 18)) {}
-
-
-  if (!tileMap.load("assets/tilemap.png", 64, 2500, 2500))
-
-  tileMap.addLayer();
-  tileMap.addLayer();
-
-    for (int x = 0; x < 100; ++x) {
-      for (int y = 0; y < 100; ++y) {
-        tileMap.setTile(0,x,y,y);
-      }
-    }
-
-
-
-  editor.setActiveTile(3);
-  editor.setActiveLayer(0);
-
- }
-
-void Loop() {
-  while (window.isOpen()) {
-    while (const std::optional event = window.pollEvent()) {
-      if (event->is<sf::Event::Closed>()) {
-        window.close();
-      }
-
-      if (const auto* keypressed = event->getIf<sf::Event::KeyPressed>()) {
-        if (keypressed->code == sf::Keyboard::Key::Num1) editor.setActiveLayer(0);
-        if (keypressed->code == sf::Keyboard::Key::Num2) editor.setActiveLayer(1);
-        if (keypressed->code == sf::Keyboard::Key::Num3) editor.setActiveLayer(2);
-
-        if (keypressed->code == sf::Keyboard::Key::P) {
-          editor.setActiveTile(editor.getActiveTile() + 1);
+        void Setup(){
+            // Create the main window
+            window_.create(sf::VideoMode(window_size_u), "SFML window", sf::State::Fullscreen);
+            camera_.Setup(window_size_f);
+            map_.Setup(world_size, {32, 32});
         }
-        if (keypressed->code == sf::Keyboard::Key::O) {
-          editor.setActiveTile(editor.getActiveTile() - 1);
+
+        void ToggleFullscreen(){
+            isFullscreen_ = !isFullscreen_;
+            if (isFullscreen_) {
+                window_.create(sf::VideoMode::getDesktopMode(), "SFML window",
+                               sf::State::Fullscreen);
+            } else {
+                window_.create(sf::VideoMode(window_size_u), "SFML window",
+                               sf::Style::Default);
+            }
+            camera_.OnWindowResized(window_.getSize());
         }
-      }
+    } // namespace
 
-      if (const auto* mouseScroll = event->getIf<sf::Event::MouseButtonPressed>()) {
+    void Loop(){
 
-      }
+        Setup();
 
-      editor.handleEvent(*event, window);
+        // Start the game loop
+        while (window_.isOpen()) {
+            const float dt = clock_.restart().asSeconds();
+
+            // Process events = Input frame
+            while (const std::optional event = window_.pollEvent()) {
+                // Close window: exit
+                if (event->is<sf::Event::Closed>()) {
+                    window_.close();
+                }
+                if (const auto *key = event->getIf<sf::Event::KeyPressed>()) {
+                    if (key->code == sf::Keyboard::Key::Enter && key->alt) {
+                        ToggleFullscreen();
+                        continue;
+                    }
+                }
+                camera_.HandleEvent(*event, window_);
+            }
+
+            camera_.Update(dt);
+            camera_.Apply(window_);
+
+            // Graphic frame
+            window_.clear();
+            map_.Draw(window_);
+            window_.display();
+        }
     }
-
-    window.clear();
-    tileMap.draw(window);
-    fps.draw(window);
-    window.display();
-  }
-}
-}  // namespace game
+} // namespace game
