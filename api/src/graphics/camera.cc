@@ -39,7 +39,7 @@ namespace graphics {
         if (const auto *wheel = event.getIf<sf::Event::MouseWheelScrolled>()) {
             const sf::Vector2f anchor =
                 window.mapPixelToCoords({wheel->position.x, wheel->position.y}, view_);
-            const float factor = wheel->delta > 0 ? wheelZoomStep_ : 1.f / wheelZoomStep_;
+            const float factor = wheel->delta < 0 ? wheelZoomStep_ : 1.f / wheelZoomStep_;
             Zoom(factor, anchor);
             return;
         }

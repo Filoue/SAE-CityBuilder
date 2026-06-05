@@ -5,7 +5,7 @@
 #include "tilemap.h"
 
 #include "game_types.h"
-#include "../../api/include/tiles/tilemap_generator.h"
+#include "tiles/tilemap_generator.h"
 
 void Tilemap::Setup(sf::Vector2f gridSize, sf::Vector2f gridOffset){
     std::vector<tiles::Tile<TerrainTiles> > terrain = tiles::generator::GenerateTerrain(gridSize, gridOffset);

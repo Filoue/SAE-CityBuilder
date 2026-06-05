@@ -3,19 +3,23 @@
 #include "game.h"
 
 #include "tilemap.h"
+#include "ai/normalize_npc.h"
+#include "ai/npc_manager.h"
 #include "graphics/camera.h"
 #include "graphics/tilemap_renderer.h"
 #include "graphics/tilesheet.h"
 
 namespace game {
     namespace {
-        constexpr sf::Vector2f world_size = {19200.f * 5, 10800.f * 5};
+        constexpr sf::Vector2f world_size = {1920.f * 5, 1080.f * 5};
         constexpr sf::Vector2f window_size_f = {1920.f, 1080.f};
         constexpr sf::Vector2u window_size_u = {1920u, 1080u};
 
         sf::Clock clock_;
         sf::RenderWindow window_;
         bool isFullscreen_ = false;
+
+        api::ai::NpcManager npc_manager;
 
         Tilemap map_;
         graphics::Camera camera_;
@@ -25,6 +29,7 @@ namespace game {
             window_.create(sf::VideoMode(window_size_u), "SFML window", sf::State::Fullscreen);
             camera_.Setup(window_size_f);
             map_.Setup(world_size, {32, 32});
+            npc_manager.SetupManager(10, world_size);
         }
 
         void ToggleFullscreen(){
@@ -59,6 +64,9 @@ namespace game {
                         ToggleFullscreen();
                         continue;
                     }
+                    if (key->code == sf::Keyboard::Key::Escape) {
+                        window_.close();
+                    }
                 }
                 camera_.HandleEvent(*event, window_);
             }
@@ -66,9 +74,12 @@ namespace game {
             camera_.Update(dt);
             camera_.Apply(window_);
 
+            npc_manager.Update(dt);
+
             // Graphic frame
             window_.clear();
             map_.Draw(window_);
+            npc_manager.Draw(window_);
             window_.display();
         }
     }

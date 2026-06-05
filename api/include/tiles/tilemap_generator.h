@@ -8,7 +8,6 @@
 #include <random>
 #include <ranges>
 #include <span>
-#include <__msvc_ranges_to.hpp>
 
 #include "game_types.h"
 #include "tile.h"
