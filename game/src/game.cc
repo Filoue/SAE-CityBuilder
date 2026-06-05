@@ -29,7 +29,7 @@ namespace game {
             window_.create(sf::VideoMode(window_size_u), "SFML window", sf::State::Fullscreen);
             camera_.Setup(window_size_f);
             map_.Setup(world_size, {32, 32});
-            npc_manager.SetupManager(10, world_size);
+            npc_manager.SetupManager(1000, world_size);
         }
 
         void ToggleFullscreen(){
@@ -73,7 +73,6 @@ namespace game {
 
             camera_.Update(dt);
             camera_.Apply(window_);
-
             npc_manager.Update(dt);
 
             // Graphic frame
