@@ -16,6 +16,10 @@ namespace tiles::generator {
     using namespace api::tiles;
     inline std::vector<Tile<TerrainTiles>> GenerateTerrain(sf::Vector2i size, sf::Vector2f offset){
 
+
+        float fx = 0;
+        float fy = 0;
+
         std::vector<Tile<TerrainTiles>> terrainMap;
 
         FastNoiseLite noise;
@@ -40,12 +44,16 @@ namespace tiles::generator {
         cellularNoise.SetFractalLacunarity(2.18F);
         cellularNoise.SetFractalGain(0.01f);
 
-        for (float x = 0.f; x < size.x; x += offset.x) {// NOLINT(*-flp30-c)
-            for (float y = 0.f; y < size.y; y += offset.y) {// NOLINT(*-flp30-c)
+        for (int x = 0; x < size.x; x++) {// NOLINT(*-flp30-c)
+            fx += offset.x;
+            fy = 0;
+            for (int y = 0; y < size.y; y++) {// NOLINT(*-flp30-c)
+                fy += offset.y;
+
 
                 // Generator stuff -----------------------------
                 Biome b = Biome::kOcean;
-                float cellularValue = abs(cellularNoise.GetNoise(x,y));
+                float cellularValue = abs(cellularNoise.GetNoise(fx, fy));
 
 
                 if (cellularValue >= 0.66) {
@@ -60,16 +68,16 @@ namespace tiles::generator {
 
                 switch (b) {
                     case Biome::kOcean:
-                        terrainMap.emplace_back(Tile{{x,y}, TerrainTiles::kWaterA, false});
+                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kWaterA, false});
                         break;
                     case Biome::kPlain:
-                        terrainMap.emplace_back(Tile{{x, y}, TerrainTiles::kGrassA, true});
+                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kGrassA, true});
                         break;
                     case Biome::kForest:
-                        terrainMap.emplace_back(Tile{{x, y}, TerrainTiles::kForest, true});
+                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kForest, true});
                         break;
                     case Biome::kDesert:
-                        terrainMap.emplace_back(Tile{{x,y}, TerrainTiles::kSandA, true});
+                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kSandA, true});
                         break;
                 }
             }

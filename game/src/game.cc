@@ -11,7 +11,7 @@
 
 namespace game {
     namespace {
-        constexpr sf::Vector2i world_size = {30 * 5, 30 * 5};
+        constexpr sf::Vector2i world_size = {15, 15};
         constexpr sf::Vector2f window_size_f = {1920.f, 1080.f};
         constexpr sf::Vector2u window_size_u = {1920u, 1080u};
 

@@ -28,13 +28,10 @@ float AStar::CalculateHeuristic(sf::Vector2i pos1, sf::Vector2i pos2) {
 
 float AStar::CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2) {
     // Cost for moving from one node to a neighbor
-    // 1.0 for orthogonal moves, sqrt(2) for diagonal moves
     int dx = std::abs(pos1.x - pos2.x);
     int dy = std::abs(pos1.y - pos2.y);
 
-    if (dx == 1 && dy == 1) { // Diagonal move
-        return 1.41421356f; // Approximation of sqrt(2)
-    } else if (dx == 1 || dy == 1) { // Orthogonal move
+    if (dx == 1 || dy == 1) { // Orthogonal move
         return 1.0f;
     }
     return 0.0f; // Same position
@@ -78,7 +75,7 @@ bool AStar::IsValidAndWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance
         case TerrainTiles::kSandA:
         case TerrainTiles::kSandB:
         case TerrainTiles::kForest:
-            return true; // These tiles are walkable
+            return true;// These tiles are walkable
         case TerrainTiles::kWaterA:
         case TerrainTiles::kWaterB:
             return false; // These tiles are obstacles
@@ -92,9 +89,7 @@ std::vector<sf::Vector2i> AStar::ReconstructPath(
     sf::Vector2i current_pos) {
 
     std::vector<sf::Vector2i> total_path;
-    // The current_pos passed here is the end_pos, which is part of the path.
-    // The loop will add parents until it reaches the start_pos (which has no parent in came_from).
-    // So, we add current_pos first, then its parents, then reverse.
+
     total_path.push_back(current_pos);
 
     while (came_from.count(current_pos)) {
