@@ -7,10 +7,21 @@
 #include "game_types.h"
 #include "tiles/tilemap_generator.h"
 
-void Tilemap::Setup(sf::Vector2f gridSize, sf::Vector2f gridOffset){
-    std::vector<tiles::Tile<TerrainTiles> > terrain = tiles::generator::GenerateTerrain(gridSize, gridOffset);
-    std::vector<tiles::Tile<RessourcesTiles> > wood = tiles::generator::SeedAndGrow(terrain, RessourcesTiles::kWood, TerrainTiles::kGrassA);
-    std::vector<tiles::Tile<RessourcesTiles> > rock = tiles::generator::SeedAndGrow(terrain, RessourcesTiles::kRock, TerrainTiles::kSandA);
+
+void Tilemap::Setup(sf::Vector2i gridSize, sf::Vector2f gridOffset){
+    gridSize_ = gridSize; // Initialize gridSize_
+    terrain = tiles::generator::GenerateTerrain(gridSize, gridOffset);
+    wood = tiles::generator::SeedAndGrow(terrain, RessourcesTiles::kWood, TerrainTiles::kGrassA);
+    rock = tiles::generator::SeedAndGrow(terrain, RessourcesTiles::kRock, TerrainTiles::kSandA);
+
+    // Populate grid_coordinates_ with all grid positions
+    grid_coordinates_.clear();
+    grid_coordinates_.reserve(gridSize_.x * gridSize_.y);
+    for (int y = 0; y < gridSize_.y; ++y) { // Cast to int
+        for (int x = 0; x < gridSize_.x; ++x) { // Cast to int
+            grid_coordinates_.emplace_back(x, y);
+        }
+    }
 
     if (terrain_tilesheet_.InitTileSheet("_assets/tiles/RTS_medieval@2_no_margins_transparent.png", 128)) {
         terrain_tilesheet_.AddTile(TerrainTiles::kGrassA, 0, 0);
@@ -20,6 +31,8 @@ void Tilemap::Setup(sf::Vector2f gridSize, sf::Vector2f gridOffset){
         terrain_tilesheet_.AddTile(TerrainTiles::kForest, 3, 3);
         terrain_tilesheet_.AddTile(TerrainTiles::kSandA, 3, 0);
         terrain_tilesheet_.AddTile(TerrainTiles::kSandB, 3, 1);
+
+
 
 
         // init textures -------------------------------------------------------------------
@@ -53,4 +66,29 @@ void Tilemap::Setup(sf::Vector2f gridSize, sf::Vector2f gridOffset){
 void Tilemap::Draw(sf::RenderWindow &window){
     terrain_renderer_.Draw(window);
     ressources_renderer_.Draw(window);
+}
+
+std::mdspan<sf::Vector2i, std::dextents<std::size_t, 2>> Tilemap::GetWalkableTiles(){
+    return std::mdspan(grid_coordinates_.data(), static_cast<size_t>(gridSize_.y), static_cast<size_t>(gridSize_.x));
+}
+
+TerrainTiles Tilemap::GetTerrainTileType(sf::Vector2i pos) const {
+    // Perform bounds checking
+    if (pos.x < 0 || pos.x >= static_cast<int>(gridSize_.x) || // Cast to int
+        pos.y < 0 || pos.y >= static_cast<int>(gridSize_.y)) { // Cast to int
+        // Return a default non-walkable type or throw an error
+        // For simplicity, returning a non-walkable type (e.g., kWaterA)
+        return TerrainTiles::kWaterA;
+    }
+
+    // Calculate the 1D index from 2D coordinates (assuming row-major order)
+    size_t index = pos.y * static_cast<int>(gridSize_.x) + pos.x; // Cast to int
+
+    // Ensure index is within bounds of the terrain vector
+    if (index >= terrain.size()) {
+        // This case should ideally not be reached if gridSize_ and terrain.size() are consistent
+        return TerrainTiles::kWaterA; // Fallback
+    }
+
+    return terrain[index].type;
 }

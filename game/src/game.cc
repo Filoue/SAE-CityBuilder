@@ -11,7 +11,7 @@
 
 namespace game {
     namespace {
-        constexpr sf::Vector2f world_size = {1920.f * 5, 1080.f * 5};
+        constexpr sf::Vector2i world_size = {30 * 5, 30 * 5};
         constexpr sf::Vector2f window_size_f = {1920.f, 1080.f};
         constexpr sf::Vector2u window_size_u = {1920u, 1080u};
 
@@ -20,16 +20,18 @@ namespace game {
         bool isFullscreen_ = false;
 
         api::ai::NpcManager npc_manager;
+        api::ai::NormalizeNpc npc_;
 
         Tilemap map_;
         graphics::Camera camera_;
 
         void Setup(){
             // Create the main window
-            window_.create(sf::VideoMode(window_size_u), "SFML window", sf::State::Fullscreen);
+            window_.create(sf::VideoMode(window_size_u), "SFML window", sf::State::Windowed);
             camera_.Setup(window_size_f);
             map_.Setup(world_size, {32, 32});
-            npc_manager.SetupManager(1000, world_size);
+            npc_.Setup("_assets/kenney_medieval-rts/PNG/Default size/Unit/medievalUnit_01.png", world_size, {0,0}, map_, 32, {32,32});
+            //npc_manager.SetupManager(10, world_size, map_, 32, {32, 32});
         }
 
         void ToggleFullscreen(){
@@ -73,11 +75,13 @@ namespace game {
 
             camera_.Update(dt);
             camera_.Apply(window_);
+            npc_.Update(dt);
             npc_manager.Update(dt);
 
             // Graphic frame
             window_.clear();
             map_.Draw(window_);
+            npc_.Draw(window_);
             npc_manager.Draw(window_);
             window_.display();
         }

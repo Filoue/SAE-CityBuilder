@@ -9,12 +9,12 @@
 #include <ranges>
 #include <span>
 
-#include "game_types.h"
 #include "tile.h"
 
 namespace tiles::generator {
 
-    inline std::vector<Tile<TerrainTiles>> GenerateTerrain(sf::Vector2f size, sf::Vector2f offset){
+    using namespace api::tiles;
+    inline std::vector<Tile<TerrainTiles>> GenerateTerrain(sf::Vector2i size, sf::Vector2f offset){
 
         std::vector<Tile<TerrainTiles>> terrainMap;
 
@@ -60,20 +60,16 @@ namespace tiles::generator {
 
                 switch (b) {
                     case Biome::kOcean:
-                        terrainMap.emplace_back(Tile{{x,y}, TerrainTiles::kWaterA});
+                        terrainMap.emplace_back(Tile{{x,y}, TerrainTiles::kWaterA, false});
                         break;
                     case Biome::kPlain:
-                        if (abs(noise.GetNoise(x,y)) <= 0.3f) {
-                            terrainMap.emplace_back(Tile{{x, y}, TerrainTiles::kGrassA});
-                        }else {
-                            terrainMap.emplace_back(Tile{{x, y}, TerrainTiles::kWaterA});
-                        }
+                        terrainMap.emplace_back(Tile{{x, y}, TerrainTiles::kGrassA, true});
                         break;
                     case Biome::kForest:
-                        terrainMap.emplace_back(Tile{{x, y}, TerrainTiles::kForest});
+                        terrainMap.emplace_back(Tile{{x, y}, TerrainTiles::kForest, true});
                         break;
                     case Biome::kDesert:
-                        terrainMap.emplace_back(Tile{{x,y}, TerrainTiles::kSandA});
+                        terrainMap.emplace_back(Tile{{x,y}, TerrainTiles::kSandA, true});
                         break;
                 }
             }
@@ -92,7 +88,7 @@ namespace tiles::generator {
         auto map = terrain
         | std::views::filter([_terrain] (auto tile){ return tile.type == _terrain;})
         | std::views::filter([&rnd, &gen] (auto tile){ return rnd(gen) <= 0.25f;})
-        | std::views::transform([&_seed] (auto tile){ return Tile<RessourcesTiles>{tile.pos, _seed};});
+        | std::views::transform([&_seed] (auto tile){ return Tile<RessourcesTiles>{tile.pos, _seed, true};});
 
         for (auto tile: map) {
             ressourceMap.emplace_back(tile);
