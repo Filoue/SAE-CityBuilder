@@ -15,7 +15,7 @@ namespace api::ai {
     sf::Vector2i NpcManager::set_start_position(sf::Vector2i world_size){
         std::uniform_int_distribution<int> x_dist(0, world_size.x);
         std::uniform_int_distribution<int> y_dist(0, world_size.y);
-        return {x_dist(rng_), y_dist(rng_)};
+        return {0,0};
     }
 
 

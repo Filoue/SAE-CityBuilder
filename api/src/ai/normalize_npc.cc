@@ -4,6 +4,7 @@
 
 #include "ai/normalize_npc.h"
 
+#include <cmath>
 #include <print>
 #include <random> // For std::uniform_int_distribution
 
@@ -26,6 +27,8 @@ namespace api::ai {
 
         if (texture_->loadFromFile(std::string(sprite_path))) {
             sprite_ = sf::Sprite(*texture_);
+            sf::FloatRect bounds = sprite_->getLocalBounds();
+            sprite_->setOrigin(bounds.getCenter());
         }
 
         // Correctly set initial motor position to the center of the start grid tile
@@ -77,8 +80,8 @@ namespace api::ai {
 
         // Use std::floor to correctly handle negative coordinates if they were possible,
         // but for grid indices, static_cast<int> is usually fine for positive values.
-        return sf::Vector2i(static_cast<int>(adjusted_x / tile_size_),
-                            static_cast<int>(adjusted_y / tile_size_));
+        return sf::Vector2i(static_cast<int>(std::floor(adjusted_x / tile_size_)),
+                            static_cast<int>(std::floor(adjusted_y / tile_size_)));
     }
 
     void NormalizeNpc::SetTargetGridPosition(sf::Vector2i grid_pos) {

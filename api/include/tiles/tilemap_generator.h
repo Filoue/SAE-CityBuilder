@@ -14,13 +14,10 @@
 namespace tiles::generator {
 
     using namespace api::tiles;
-    inline std::vector<Tile<TerrainTiles>> GenerateTerrain(sf::Vector2i size, sf::Vector2f offset){
-
-
-        float fx = 0;
-        float fy = 0;
+    inline std::vector<Tile<TerrainTiles>> GenerateTerrain(sf::Vector2i size, sf::Vector2f tileSize){
 
         std::vector<Tile<TerrainTiles>> terrainMap;
+        terrainMap.reserve(static_cast<size_t>(size.x) * size.y);
 
         FastNoiseLite noise;
         noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
@@ -44,16 +41,15 @@ namespace tiles::generator {
         cellularNoise.SetFractalLacunarity(2.18F);
         cellularNoise.SetFractalGain(0.01f);
 
-        for (int x = 0; x < size.x; x++) {// NOLINT(*-flp30-c)
-            fx += offset.x;
-            fy = 0;
-            for (int y = 0; y < size.y; y++) {// NOLINT(*-flp30-c)
-                fy += offset.y;
-
+        // FIX: Utilisation du Row-Major (Y puis X) pour correspondre à l'indexation y * width + x
+        for (int y = 0; y < size.y; y++) {
+            for (int x = 0; x < size.x; x++) {
+                // Calcul direct de la position monde pour éviter les décalages flottants
+                sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
 
                 // Generator stuff -----------------------------
                 Biome b = Biome::kOcean;
-                float cellularValue = abs(cellularNoise.GetNoise(fx, fy));
+                float cellularValue = std::abs(cellularNoise.GetNoise(worldPos.x, worldPos.y));
 
 
                 if (cellularValue >= 0.66) {
@@ -68,16 +64,16 @@ namespace tiles::generator {
 
                 switch (b) {
                     case Biome::kOcean:
-                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kWaterA, false});
+                        terrainMap.emplace_back(Tile{worldPos, TerrainTiles::kWaterA, false});
                         break;
                     case Biome::kPlain:
-                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kGrassA, true});
+                        terrainMap.emplace_back(Tile{worldPos, TerrainTiles::kGrassA, true});
                         break;
                     case Biome::kForest:
-                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kForest, true});
+                        terrainMap.emplace_back(Tile{worldPos, TerrainTiles::kGrassB, true});
                         break;
                     case Biome::kDesert:
-                        terrainMap.emplace_back(Tile{{fx, fy}, TerrainTiles::kSandA, true});
+                        terrainMap.emplace_back(Tile{worldPos, TerrainTiles::kSandA, true});
                         break;
                 }
             }

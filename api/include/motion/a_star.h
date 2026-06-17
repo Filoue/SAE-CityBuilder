@@ -44,7 +44,7 @@ public:
 
 private:
     // Helper functions (static members as they don't depend on AStar instance state)
-    static float CalculateHeuristic(sf::Vector2i pos1, sf::Vector2i pos2);
+    static int CalculateHeuristic(sf::Vector2i pos1, sf::Vector2i pos2);
     static float CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2);
     static std::vector<sf::Vector2i> GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size);
     static bool IsValidAndWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance);
