@@ -28,4 +28,11 @@ enum class RessourcesTiles {
     kFood
 };
 
+enum class Housing {
+    kNone,
+    kHunterHouse,
+    kWoodCutterHouse,
+    kMinerHouse,
+};
+
 #endif //CITYBUILDER_GAME_TYPES_H

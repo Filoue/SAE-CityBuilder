@@ -8,6 +8,7 @@
 #include "graphics/camera.h"
 #include "graphics/tilemap_renderer.h"
 #include "graphics/tilesheet.h"
+#include "editMode/edit_mod.h"
 
 namespace game {
     namespace {
@@ -21,17 +22,19 @@ namespace game {
 
         api::ai::NpcManager npc_manager;
         api::ai::NormalizeNpc npc_;
+        EditMode edit_mode;
 
         Tilemap map_;
         graphics::Camera camera_;
 
         void Setup(){
             // Create the main window
-            window_.create(sf::VideoMode(window_size_u), "SFML window", sf::State::Fullscreen);
+            window_.create(sf::VideoMode::getDesktopMode(), "SFML window", sf::State::Fullscreen);
             camera_.Setup(window_size_f);
             map_.Setup(world_grid_dimensions, {32.f, 32.f});
             //npc_.Setup("_assets/kenney_medieval-rts/PNG/Default size/Unit/medievalUnit_01.png", world_grid_dimensions, {0,0}, map_, 32.f, {0.f, 0.f});
             npc_manager.SetupManager(1, world_grid_dimensions, map_, 32, {0.f, 0.f});
+            edit_mode.Setup(32.f, {0.f, 0.f});
         }
 
         void ToggleFullscreen(){
@@ -73,20 +76,26 @@ namespace game {
                     if (key->code == sf::Keyboard::Key::Num1) {
                         npc_manager.AddNpc(10, world_grid_dimensions, map_, 32, {0.f, 0.f});
                     }
+                    if (key->code == sf::Keyboard::Key::E) {
+                        edit_mode.Toggle();
+                    }
                 }
                 camera_.HandleEvent(*event, window_);
+                edit_mode.HandleEvent(*event, window_, map_);
             }
 
             camera_.Update(dt);
             camera_.Apply(window_);
             //npc_.Update(dt);
             npc_manager.Update(dt);
+            edit_mode.Update(window_, map_);
 
             // Graphic frame
             window_.clear();
             map_.Draw(window_);
             npc_.Draw(window_);
             npc_manager.Draw(window_);
+            edit_mode.Draw(window_);
             window_.display();
         }
     }
