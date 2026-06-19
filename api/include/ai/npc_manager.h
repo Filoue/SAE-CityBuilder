@@ -11,6 +11,7 @@ class NpcManager {
     NpcManager() = default;
     void SetupManager(int num_npcs, sf::Vector2i world_size,const Tilemap& _map, float _tile_size, sf::Vector2f _grid_offset);
     void Update(float dt)const;
+    void AddNpc(int num_npcs, sf::Vector2i world_size, const Tilemap&_map, float _tile_size, sf::Vector2f _grid_offset);
     void Draw(sf::RenderWindow& window)const;
  private:
     sf::Vector2i set_start_position(sf::Vector2i world_size);

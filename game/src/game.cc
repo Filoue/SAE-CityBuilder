@@ -31,7 +31,7 @@ namespace game {
             camera_.Setup(window_size_f);
             map_.Setup(world_grid_dimensions, {32.f, 32.f});
             //npc_.Setup("_assets/kenney_medieval-rts/PNG/Default size/Unit/medievalUnit_01.png", world_grid_dimensions, {0,0}, map_, 32.f, {0.f, 0.f});
-            npc_manager.SetupManager(3000, world_grid_dimensions, map_, 32, {0.f, 0.f});
+            npc_manager.SetupManager(1, world_grid_dimensions, map_, 32, {0.f, 0.f});
         }
 
         void ToggleFullscreen(){
@@ -68,6 +68,10 @@ namespace game {
                     }
                     if (key->code == sf::Keyboard::Key::Escape) {
                         window_.close();
+                    }
+
+                    if (key->code == sf::Keyboard::Key::Num1) {
+                        npc_manager.AddNpc(10, world_grid_dimensions, map_, 32, {0.f, 0.f});
                     }
                 }
                 camera_.HandleEvent(*event, window_);
