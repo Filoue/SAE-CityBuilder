@@ -53,7 +53,7 @@ void EditMode::Draw(sf::RenderWindow& window) {
     }
 
     // 2. Draw "Ghost" building at cursor
-    if (enabled_) {
+     if (enabled_) {
         sf::RectangleShape ghost(sf::Vector2f(tile_size_, tile_size_));
         ghost.setOrigin(ghost.getSize() / 2.f);
         ghost.setPosition(GridToWorld(hovered_grid_pos_));

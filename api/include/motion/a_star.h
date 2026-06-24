@@ -10,7 +10,7 @@
 // Forward declaration of Tilemap to avoid circular dependencies if Tilemap also includes AStar.
 // However, AStar needs the full definition of Tilemap to access its members (terrain, gridSize_).
 // So, we will include the full header here.
-#include "../../game/include/tilemap.h" // AStar needs to know about Tilemap
+#include "tilemap.h" // AStar needs to know about Tilemap
 
 namespace api::motion {
 
