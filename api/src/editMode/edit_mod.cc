@@ -5,19 +5,20 @@
 #include "tilemap.h"
 #include <cmath>
 
-void EditMode::Setup(float tile_size, sf::Vector2f grid_offset) {
+void EditMode::Setup(float tile_size, sf::Vector2f grid_offset, Tilemap* tilemap) {
     tile_size_ = tile_size;
     grid_offset_ = grid_offset;
+    tilemap_ = tilemap;
 }
 
-void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& window, const Tilemap& tilemap) {
+void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& window) {
     if (!enabled_) return;
 
     if (const auto* mouseButton = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mouseButton->button == sf::Mouse::Button::Left) {
             // Check if position is walkable (not water)
-            TerrainTiles tile = tilemap.GetTerrainTileType(hovered_grid_pos_);
-            if (tile != TerrainTiles::kWaterA && tile != TerrainTiles::kWaterB) {
+            TerrainTiles tile = tilemap_->GetTerrainTileType(hovered_grid_pos_);
+            if (Placable(tile)) {
                 // Check if already occupied (simple check)
                 bool occupied = false;
                 for (const auto& b : buildings_) {
@@ -32,7 +33,7 @@ void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& windo
     }
 }
 
-void EditMode::Update(const sf::RenderWindow& window, const Tilemap& tilemap) {
+void EditMode::Update(const sf::RenderWindow& window) {
     if (!enabled_) return;
 
     // Get mouse position in world coordinates (accounting for camera/view)
@@ -51,13 +52,18 @@ void EditMode::Draw(sf::RenderWindow& window) {
         shape.setFillColor(sf::Color::Blue); // Placeholder color for buildings
         window.draw(shape);
     }
-
+    TerrainTiles tile = tilemap_->GetTerrainTileType(hovered_grid_pos_);
     // 2. Draw "Ghost" building at cursor
      if (enabled_) {
         sf::RectangleShape ghost(sf::Vector2f(tile_size_, tile_size_));
-        ghost.setOrigin(ghost.getSize() / 2.f);
-        ghost.setPosition(GridToWorld(hovered_grid_pos_));
-        ghost.setFillColor(sf::Color(255, 255, 255, 127)); // Semi-transparent white
+         ghost.setOrigin(ghost.getSize() / 2.f);
+         ghost.setPosition(GridToWorld(hovered_grid_pos_));
+         if (Placable(tile)) {
+             ghost.setFillColor(sf::Color(255, 255, 255, 127)); // Semi-transparent white
+         }else if (!Placable(tile)) {
+             ghost.setFillColor(sf::Color(255, 0, 0, 127));
+         }
+
         window.draw(ghost);
     }
 }
@@ -72,4 +78,19 @@ sf::Vector2i EditMode::WorldToGrid(sf::Vector2f world_pos) const {
 sf::Vector2f EditMode::GridToWorld(sf::Vector2i grid_pos) const {
     return sf::Vector2f(static_cast<float>(grid_pos.x) * tile_size_ + tile_size_ / 2.f,
                         static_cast<float>(grid_pos.y) * tile_size_ + tile_size_ / 2.f) + grid_offset_;
+}
+
+bool EditMode::Placable(TerrainTiles tile) {
+
+    switch (tile) {
+        case TerrainTiles::kForest:
+        case TerrainTiles::kGrassA:
+        case TerrainTiles::kGrassB:
+        case TerrainTiles::kSandA:
+        case TerrainTiles::kSandB:
+            return true;
+        case TerrainTiles::kWaterA:
+        case TerrainTiles::kWaterB:
+            return false;
+    }
 }

@@ -34,7 +34,7 @@ namespace game {
             map_.Setup(world_grid_dimensions, {32.f, 32.f});
             //npc_.Setup("_assets/kenney_medieval-rts/PNG/Default size/Unit/medievalUnit_01.png", world_grid_dimensions, {0,0}, map_, 32.f, {0.f, 0.f});
             npc_manager.SetupManager(1, world_grid_dimensions, map_, 32, {0.f, 0.f});
-            edit_mode.Setup(32.f, {0.f, 0.f});
+            edit_mode.Setup(32.f, {0.f, 0.f}, &map_);
         }
 
         void ToggleFullscreen(){
@@ -81,14 +81,14 @@ namespace game {
                     }
                 }
                 camera_.HandleEvent(*event, window_);
-                edit_mode.HandleEvent(*event, window_, map_);
+                edit_mode.HandleEvent(*event, window_);
             }
 
             camera_.Update(dt);
             camera_.Apply(window_);
             //npc_.Update(dt);
             npc_manager.Update(dt);
-            edit_mode.Update(window_, map_);
+            edit_mode.Update(window_);
 
             // Graphic frame
             window_.clear();

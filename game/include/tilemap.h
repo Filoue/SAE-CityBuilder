@@ -35,14 +35,14 @@ public:
     std::vector<api::tiles::Tile<RessourcesTiles> > rock;
 
     std::mdspan<sf::Vector2i, std::dextents<std::size_t, 2>> GetWalkableTiles(); // Corrected return type
-RessourcesTiles GetWoodTileType(sf::Vector2i pos)const;RessourcesTiles GetRockTileType(sf::Vector2i pos)const;
+    RessourcesTiles GetWoodTileType(sf::Vector2i pos)const;
+    RessourcesTiles GetRockTileType(sf::Vector2i pos)const;
 
     // New public method to get the terrain tile type at a specific grid position
     TerrainTiles GetTerrainTileType(sf::Vector2i pos) const;
 
     void Setup(sf::Vector2i gridSize, sf::Vector2f gridOffset);
     void Draw(sf::RenderWindow &window);
-
 };
 
 #endif //CITYBUILDER_TILEMAP_H
