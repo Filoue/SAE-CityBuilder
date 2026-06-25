@@ -11,10 +11,6 @@
 
 namespace core::ai::behaviour_tree {
     class SequenceNode : public CompositeNode {
-
-        std::vector<std::unique_ptr<Node>> children_;
-        int currentChild_ = 0;
-
     public:
         ~SequenceNode() override = default;
 

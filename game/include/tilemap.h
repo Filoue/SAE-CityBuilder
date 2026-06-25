@@ -31,15 +31,17 @@ public:
     sf::Vector2i gridSize_;// Added to store the grid dimensions
 
     std::vector<api::tiles::Tile<TerrainTiles> > terrain;
-    std::vector<api::tiles::Tile<RessourcesTiles> > wood;
-    std::vector<api::tiles::Tile<RessourcesTiles> > rock;
+    std::vector<api::tiles::Tile<RessourcesTiles>> ressources;
 
     std::mdspan<sf::Vector2i, std::dextents<std::size_t, 2>> GetWalkableTiles(); // Corrected return type
-    RessourcesTiles GetWoodTileType(sf::Vector2i pos)const;
-    RessourcesTiles GetRockTileType(sf::Vector2i pos)const;
+    RessourcesTiles GetRessourcesTiles(sf::Vector2i pos) const;
+    size_t PosToIndex(sf::Vector2i pos) const;
+    sf::Vector2i IndexToPos(int index);
+
 
     // New public method to get the terrain tile type at a specific grid position
     TerrainTiles GetTerrainTileType(sf::Vector2i pos) const;
+    RessourcesTiles GetRessourcesTileType(sf::Vector2i pos)const;
 
     void Setup(sf::Vector2i gridSize, sf::Vector2f gridOffset);
     void Draw(sf::RenderWindow &window);

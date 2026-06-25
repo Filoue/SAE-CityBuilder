@@ -25,7 +25,8 @@ enum class TerrainTiles {
 enum class RessourcesTiles {
     kWood,
     kRock,
-    kFood
+    kFood,
+    kNone
 };
 
 enum class Housing {

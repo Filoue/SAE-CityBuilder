@@ -12,7 +12,7 @@ void EditMode::Setup(float tile_size, sf::Vector2f grid_offset, Tilemap* tilemap
 }
 
 void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& window) {
-    if (!enabled_) return;
+    //if (!enabled_) return;
 
     if (const auto* mouseButton = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (mouseButton->button == sf::Mouse::Button::Left) {
@@ -21,6 +21,7 @@ void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& windo
             if (Placable(tile)) {
                 // Check if already occupied (simple check)
                 bool occupied = false;
+                // TODO make a unordered_set insert(pos) erase(pos) : if occupied_cells_.contains(hovered_grid_pos_
                 for (const auto& b : buildings_) {
                     if (b.gridPos == hovered_grid_pos_) { occupied = true; break; }
                 }
@@ -29,7 +30,27 @@ void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& windo
                     buildings_.push_back({hovered_grid_pos_, current_selection_});
                 }
             }
+            Building();
         }
+    }
+    if (const auto* keyPad = event.getIf<sf::Event::KeyPressed>()) {
+        if (keyPad->code == sf::Keyboard::Key::Numpad1) selection = 0;
+        if (keyPad->code == sf::Keyboard::Key::Numpad2) selection = 1;
+        if (keyPad->code == sf::Keyboard::Key::Numpad3) selection = 2;
+    }
+    switch (selection) {
+        case 0:
+            current_selection_ = Housing::kHunterHouse;
+            color_ = sf::Color(0,0,255);
+            break;
+        case 1:
+            current_selection_ = Housing::kMinerHouse;
+            color_ = sf::Color(100,100,100);
+            break;
+        case 2:
+            current_selection_ = Housing::kWoodCutterHouse;
+            color_ = sf::Color(179, 79, 50);
+            break;
     }
 }
 
@@ -43,15 +64,26 @@ void EditMode::Update(const sf::RenderWindow& window) {
     hovered_grid_pos_ = WorldToGrid(worldPos);
 }
 
-void EditMode::Draw(sf::RenderWindow& window) {
-    // 1. Draw already placed buildings
+void EditMode::Building() {
+    shape.setFillColor(color_);
+
     for (const auto& b : buildings_) {
-        sf::RectangleShape shape(sf::Vector2f(tile_size_ * 0.8f, tile_size_ * 0.8f));
+        shape.setSize(sf::Vector2f(tile_size_ * 0.8f, tile_size_ * 0.8f));
         shape.setOrigin(shape.getSize() / 2.f);
         shape.setPosition(GridToWorld(b.gridPos));
-        shape.setFillColor(sf::Color::Blue); // Placeholder color for buildings
-        window.draw(shape);
     }
+
+    buildinglist_.emplace_back(shape);
+}
+
+void EditMode::Draw(sf::RenderWindow& window) {
+    // 1. Draw already placed buildings
+    // TODO VertexArray$
+    for (auto element : buildinglist_)
+    {
+        window.draw(element);
+    }
+
     TerrainTiles tile = tilemap_->GetTerrainTileType(hovered_grid_pos_);
     // 2. Draw "Ghost" building at cursor
      if (enabled_) {
@@ -59,7 +91,7 @@ void EditMode::Draw(sf::RenderWindow& window) {
          ghost.setOrigin(ghost.getSize() / 2.f);
          ghost.setPosition(GridToWorld(hovered_grid_pos_));
          if (Placable(tile)) {
-             ghost.setFillColor(sf::Color(255, 255, 255, 127)); // Semi-transparent white
+             ghost.setFillColor(sf::Color(color_.r, color_.g, color_.b, 100)); // Semi-transparent white
          }else if (!Placable(tile)) {
              ghost.setFillColor(sf::Color(255, 0, 0, 127));
          }
@@ -91,6 +123,8 @@ bool EditMode::Placable(TerrainTiles tile) {
             return true;
         case TerrainTiles::kWaterA:
         case TerrainTiles::kWaterB:
+            return false;
+        default:
             return false;
     }
 }

@@ -10,6 +10,7 @@
 #include <span>
 
 #include "tile.h"
+#include "tilemap.h"
 
 namespace tiles::generator {
 
@@ -81,22 +82,37 @@ namespace tiles::generator {
         return terrainMap;
     }
 
-    inline std::vector<Tile<RessourcesTiles>> SeedAndGrow(std::span<Tile<TerrainTiles>> terrain, RessourcesTiles _seed, TerrainTiles _terrain){
+    inline std::vector<Tile<RessourcesTiles>> SeedAndGrow(sf::Vector2i size, sf::Vector2f tileSize, std::vector<Tile<TerrainTiles>> terrain){
 
         std::vector<Tile<RessourcesTiles>> ressourceMap;
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution rnd(0.f, 1.f);
+        FastNoiseLite ressourceNoise;
+        ressourceNoise.SetSeed(1337);
+        ressourceNoise.SetFrequency(0.9);
 
-        auto map = terrain
-        | std::views::filter([_terrain] (auto tile){ return tile.type == _terrain;})
-        | std::views::filter([&rnd, &gen] (auto tile){ return rnd(gen) <= 0.25f;})
-        | std::views::transform([&_seed] (auto tile){ return Tile<RessourcesTiles>{tile.pos, _seed, true};});
 
-        for (auto tile: map) {
-            ressourceMap.emplace_back(tile);
+
+        for (auto x = 0; size.x > x; x++) {
+            for (auto y = 0; size.y > y; y++) {
+                int index = y * size.x + x;
+                sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
+                float ressourceNoiseValue = std::abs(ressourceNoise.GetNoise(worldPos.x, worldPos.y));
+                if (ressourceNoiseValue >= 0.6f) {
+                    if (terrain.at(index).type == TerrainTiles::kWaterA) {
+                        ressourceMap.emplace_back(worldPos, RessourcesTiles::kNone, true);
+                    }
+                    else if (terrain.at(index).type == TerrainTiles::kGrassB) {
+                        ressourceMap.emplace_back(worldPos, RessourcesTiles::kWood, false);
+                    }
+                    else if (terrain.at(index).type == TerrainTiles::kSandA || terrain.at(index).type == TerrainTiles::kSandB) {
+                        ressourceMap.emplace_back(worldPos, RessourcesTiles::kRock, false);
+                    }
+                }else {
+                    ressourceMap.emplace_back(worldPos, RessourcesTiles::kNone, false);
+                }
+            }
         }
+
         return ressourceMap;
 
     }

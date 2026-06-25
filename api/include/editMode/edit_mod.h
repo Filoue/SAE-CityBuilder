@@ -22,7 +22,7 @@ public:
 
     void Setup(float tile_size, sf::Vector2f grid_offset, Tilemap* tilemap);
     void HandleEvent(const sf::Event& event, const sf::RenderWindow& window);
-    void Update(const sf::RenderWindow& window);
+    void Update(const sf::RenderWindow& window);void Building();
     void Draw(sf::RenderWindow& window);
 
     void SetSelectedBuilding(Housing type) { current_selection_ = type; }
@@ -33,6 +33,11 @@ private:
     sf::Vector2i WorldToGrid(sf::Vector2f world_pos) const;
     sf::Vector2f GridToWorld(sf::Vector2i grid_pos) const;
     bool Placable(TerrainTiles tile);
+
+    int selection = 0;
+    std::vector<sf::RectangleShape> buildinglist_;
+    sf::Color color_;
+    sf::RectangleShape shape;
 
 
 

@@ -7,7 +7,7 @@
 
 // Define operator< for sf::Vector2i to allow its use as a key in std::map
 namespace sf {
-    bool operator<(const Vector2i& lhs, const Vector2i& rhs) {
+    bool operator<(const sf::Vector2i& lhs, const sf::Vector2i& rhs) {
         if (lhs.x != rhs.x) {
             return lhs.x < rhs.x;
         }
@@ -34,6 +34,8 @@ float AStar::CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2) {
     if (dx + dy == 1) return 1.0f;
     return 0.0f; // Même position
 }
+
+    //TODO vector to array constexpr
 
 std::vector<sf::Vector2i> AStar::GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size) {
     std::vector<sf::Vector2i> neighbors;
@@ -67,19 +69,42 @@ bool AStar::IsValidAndWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance
 
     // Récupère le type de terrain pour déterminer si l'IA peut marcher dessus
     TerrainTiles tile_type = tilemap_instance.GetTerrainTileType(pos);
-    
+
+
     switch (tile_type) {
         case TerrainTiles::kGrassA:
         case TerrainTiles::kGrassB:
         case TerrainTiles::kSandA:
         case TerrainTiles::kSandB:
         case TerrainTiles::kForest:
-            return true; // Terrains marchables
+             return true; // Terrains marchables
         case TerrainTiles::kWaterA:
         case TerrainTiles::kWaterB:
             return false; // Obstacles (Eau)
         default:
-            return false; 
+            return false;
+    }
+
+}
+
+bool AStar::IsRessourceWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance) {
+    if (pos.x < 0 || pos.x >= tilemap_instance.gridSize_.x ||
+    pos.y < 0 || pos.y >= tilemap_instance.gridSize_.y) {
+        return false;
+    }
+    RessourcesTiles ressource_type = tilemap_instance.GetRessourcesTileType(pos);
+
+    // TODO need to look why the png walk on trees and rocks
+
+    switch (ressource_type) {
+        case RessourcesTiles::kNone:
+        case RessourcesTiles::kFood:
+            return true;
+        case RessourcesTiles::kRock:
+        case RessourcesTiles::kWood:
+            return false;
+        default:
+            return false;
     }
 }
 
@@ -113,10 +138,14 @@ std::vector<sf::Vector2i> AStar::FindPath(
     if (!IsValidAndWalkable(start_pos, tilemap_instance) || !IsValidAndWalkable(end_pos, tilemap_instance)) {
         return {}; 
     }
+    if (!IsRessourceWalkable(start_pos, tilemap_instance) || !IsRessourceWalkable(end_pos, tilemap_instance)) {
+        return {};
+    }
 
     // Liste des nœuds à explorer, triée par f_score (coût total estimé) le plus bas
     std::priority_queue<AStarNode, std::vector<AStarNode>, std::greater<AStarNode>> open_set;
 
+    // TODO change it with vector
     // g_scores_map : stocke le coût le plus bas trouvé pour aller du départ à cette tuile
     std::map<sf::Vector2i, float> g_scores_map;
     // came_from_map : permet de savoir de quelle tuile on vient pour reconstruire le chemin
@@ -142,6 +171,9 @@ std::vector<sf::Vector2i> AStar::FindPath(
             // Si le voisin est un obstacle (eau), on l'ignore
             if (!IsValidAndWalkable(neighbor_pos, tilemap_instance)) {
                 continue; 
+            }
+            if (!IsRessourceWalkable(neighbor_pos, tilemap_instance)) {
+                continue;
             }
 
             // Calcul du score G potentiel pour ce voisin (distance parcourue + 1)
