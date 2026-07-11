@@ -30,10 +30,10 @@ enum class RessourcesTiles {
 };
 
 enum class Housing {
-    kNone,
-    kHunterHouse,
+    kHunterHouse = 0,
     kWoodCutterHouse,
     kMinerHouse,
+    kNone,
 };
 
 #endif //CITYBUILDER_GAME_TYPES_H

@@ -4,63 +4,63 @@
 #include <set>   // For std::set (to check if node is in open_set efficiently)
 #include <limits> // For std::numeric_limits
 #include <algorithm> // For std::reverse
+#include <vector>
 
-// Define operator< for sf::Vector2i to allow its use as a key in std::map
-namespace sf {
-    bool operator<(const sf::Vector2i& lhs, const sf::Vector2i& rhs) {
-        if (lhs.x != rhs.x) {
-            return lhs.x < rhs.x;
-        }
-        return lhs.y < rhs.y;
-    }
-} // namespace sf
+// // Define operator< for sf::Vector2i to allow its use as a key in std::map
+// namespace sf {
+//     bool operator<(const sf::Vector2i& lhs, const sf::Vector2i& rhs) {
+//         if (lhs.x != rhs.x) {
+//             return lhs.x < rhs.x;
+//         }
+//         return lhs.y < rhs.y;
+//     }
+// } // namespace sf
 
 namespace api::motion {
 
 // --- Helper Functions Implementation ---
 
-int AStar::CalculateHeuristic(sf::Vector2i pos1, sf::Vector2i pos2) {
+int AStar::CalculateHeuristic(const sf::Vector2i& pos1,const sf::Vector2i& pos2) {
     // Distance de Manhattan : Utilisée ici car le mouvement est restreint aux 4 directions cardinales.
     // C'est une estimation (H) du coût restant pour atteindre la cible.
     return std::abs(pos1.x - pos2.x) + std::abs(pos1.y - pos2.y);
 }
 
-float AStar::CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2) {
-    // Coût réel (G) pour se déplacer d'une tuile à sa voisine directe.
-    int dx = std::abs(pos1.x - pos2.x);
-    int dy = std::abs(pos1.y - pos2.y);
-
-    // Si les tuiles sont adjacentes, le coût est de 1.
-    if (dx + dy == 1) return 1.0f;
-    return 0.0f; // Même position
-}
+// float AStar::CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2) {
+//     // Coût réel (G) pour se déplacer d'une tuile à sa voisine directe.
+//     int dx = std::abs(pos1.x - pos2.x);
+//     int dy = std::abs(pos1.y - pos2.y);
+//
+//     // Si les tuiles sont adjacentes, le coût est de 1.
+//     if (dx + dy == 1) return 1.0f;
+//     return 0.0f; // Même position
+// }
 
     //TODO vector to array constexpr
 
-std::vector<sf::Vector2i> AStar::GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size) {
-    std::vector<sf::Vector2i> neighbors;
-    // Parcourt les tuiles adjacentes (incluant les diagonales dans la boucle)
-    for (int dx = -1; dx <= 1; ++dx) {
-        for (int dy = -1; dy <= 1; ++dy) {
-            // On filtre pour ne garder que les mouvements orthogonaux (Haut, Bas, Gauche, Droite)
-            // La somme des valeurs absolues de dx et dy doit être 1.
-            if (std::abs(dx) + std::abs(dy) != 1) {
-                continue; 
-            }
+// void AStar::GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size, std::vector<sf::Vector2i>& neighbors) {
+//
+//     // Parcourt les tuiles adjacentes (incluant les diagonales dans la boucle)
+//     for (int dx = -1; dx <= 1; ++dx) {
+//         for (int dy = -1; dy <= 1; ++dy) {
+//             // On filtre pour ne garder que les mouvements orthogonaux (Haut, Bas, Gauche, Droite)
+//             // La somme des valeurs absolues de dx et dy doit être 1.
+//             if (std::abs(dx) + std::abs(dy) != 1) {
+//                 continue;
+//             }
+//
+//             sf::Vector2i neighbor_pos(pos.x + dx, pos.y + dy);
+//
+//             // Vérification des limites de la grille
+//             if (neighbor_pos.x >= 0 && neighbor_pos.x < grid_size.x &&
+//                 neighbor_pos.y >= 0 && neighbor_pos.y < grid_size.y) {
+//                 neighbors.push_back(neighbor_pos);
+//             }
+//         }
+//     }
+// }
 
-            sf::Vector2i neighbor_pos(pos.x + dx, pos.y + dy);
-
-            // Vérification des limites de la grille
-            if (neighbor_pos.x >= 0 && neighbor_pos.x < grid_size.x &&
-                neighbor_pos.y >= 0 && neighbor_pos.y < grid_size.y) {
-                neighbors.push_back(neighbor_pos);
-            }
-        }
-    }
-    return neighbors;
-}
-
-bool AStar::IsValidAndWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance) {
+bool AStar::IsValidAndWalkable(const sf::Vector2i& pos, const Tilemap& tilemap_instance) {
     // Sécurité : vérifie à nouveau les limites de la grille
     if (pos.x < 0 || pos.x >= tilemap_instance.gridSize_.x ||
         pos.y < 0 || pos.y >= tilemap_instance.gridSize_.y) {
@@ -87,7 +87,7 @@ bool AStar::IsValidAndWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance
 
 }
 
-bool AStar::IsRessourceWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance) {
+bool AStar::IsRessourceWalkable(const sf::Vector2i& pos, const Tilemap& tilemap_instance) {
     if (pos.x < 0 || pos.x >= tilemap_instance.gridSize_.x ||
     pos.y < 0 || pos.y >= tilemap_instance.gridSize_.y) {
         return false;
@@ -109,17 +109,22 @@ bool AStar::IsRessourceWalkable(sf::Vector2i pos, const Tilemap& tilemap_instanc
 }
 
 std::vector<sf::Vector2i> AStar::ReconstructPath(
-    const std::map<sf::Vector2i, sf::Vector2i>& came_from,
-    sf::Vector2i current_pos) {
+    const std::vector<int>& came_from,
+    int current_index,
+    const sf::Vector2i& grid_size) {
 
     // Reconstruit le chemin en partant de la fin (Target) vers le début (Start)
     std::vector<sf::Vector2i> total_path;
-    total_path.push_back(current_pos);
+    total_path.reserve(32);
 
-    // Remonte la chaîne des parents stockée dans came_from_map
-    while (came_from.count(current_pos)) {
-        current_pos = came_from.at(current_pos);
-        total_path.push_back(current_pos);
+    // // Remonte la chaîne des parents stockée dans came_from_map
+    // while (came_from.count(current_pos)) {
+    //     current_pos = came_from.at(current_pos);
+    //     total_path.push_back(current_pos);
+    // }
+    while (current_index != -1) {
+        total_path.push_back({current_index % grid_size.x, current_index / grid_size.x});
+        current_index = came_from[current_index];
     }
     
     // On inverse le vecteur pour avoir le chemin du début vers la fin
@@ -130,9 +135,12 @@ std::vector<sf::Vector2i> AStar::ReconstructPath(
 // --- Main A* Algorithm Implementation ---
 
 std::vector<sf::Vector2i> AStar::FindPath(
-    sf::Vector2i start_pos,
-    sf::Vector2i end_pos,
+    const sf::Vector2i& start_pos,
+    const sf::Vector2i& end_pos,
     const Tilemap& tilemap_instance) {
+
+    // std::vector<sf::Vector2i> neighbours;
+    // neighbours.reserve(4);
 
     // Validation initiale : si le point de départ ou d'arrivée est dans l'eau
     if (!IsValidAndWalkable(start_pos, tilemap_instance) || !IsValidAndWalkable(end_pos, tilemap_instance)) {
@@ -142,32 +150,60 @@ std::vector<sf::Vector2i> AStar::FindPath(
         return {};
     }
 
+    const sf::Vector2i& grid_size = tilemap_instance.gridSize_;
+    int total_cells = grid_size.x * grid_size.y;
+    int start_index = start_pos.y * grid_size.x + start_pos.x;
+    int end_index = end_pos.y * grid_size.x + end_pos.x;
+
     // Liste des nœuds à explorer, triée par f_score (coût total estimé) le plus bas
     std::priority_queue<AStarNode, std::vector<AStarNode>, std::greater<AStarNode>> open_set;
 
-    // TODO change it with vector
-    // g_scores_map : stocke le coût le plus bas trouvé pour aller du départ à cette tuile
-    std::map<sf::Vector2i, float> g_scores_map;
-    // came_from_map : permet de savoir de quelle tuile on vient pour reconstruire le chemin
-    std::map<sf::Vector2i, sf::Vector2i> came_from_map;
+    std::vector<float> g_scores(total_cells, std::numeric_limits<float>::max());
+    std::vector<int> came_from(total_cells, -1);
+    std::vector<bool> closed_set(total_cells, false);
+
+    struct Direction { int dx; int dy; };
+    static constexpr Direction kDirection[] = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} };
 
     // Initialisation avec le nœud de départ
     AStarNode start_node(start_pos, 0.0f, CalculateHeuristic(start_pos, end_pos));
     open_set.push(start_node);
-    g_scores_map[start_pos] = 0.0f;
+    g_scores[start_index] = 0.0f;
 
     while (!open_set.empty()) {
         // On récupère le nœud ayant le plus petit f_score (le plus prometteur)
         AStarNode current_node = open_set.top();
         open_set.pop();
 
-        // Condition de victoire : on a atteint la destination
-        if (current_node.position == end_pos) {
-            return ReconstructPath(came_from_map, current_node.position);
+        int current_index = current_node.position.y * grid_size.x + current_node.position.x;
+
+        // // Condition de victoire : on a atteint la destination
+        // if (current_node.position == end_pos) {
+        //     return ReconstructPath(came_from_map, current_node.position);
+        // }
+        if (current_index == end_index) {
+            return ReconstructPath(came_from, current_index, grid_size);
         }
 
+        if (closed_set[current_index]) continue;
+        closed_set[current_index] = true;
+
+        // neighbours.clear();
+        // GetNeighbors(current_node.position, tilemap_instance.gridSize_, neighbours);
+
         // Exploration des 4 voisins (Haut, Bas, Gauche, Droite)
-        for (const auto& neighbor_pos : GetNeighbors(current_node.position, tilemap_instance.gridSize_)) {
+        for (const auto& dir : kDirection) {
+            sf::Vector2i neighbor_pos(current_node.position.x + dir.dx, current_node.position.y + dir.dy);
+
+            if (neighbor_pos.x < 0 || neighbor_pos.x >= grid_size.x ||
+                neighbor_pos.y < 0 || neighbor_pos.y >= grid_size.y) {
+                continue;
+            }
+
+            int neighbor_index = neighbor_pos.y * grid_size.x + neighbor_pos.x;
+
+            if (closed_set[neighbor_index]) continue;
+
             // Si le voisin est un obstacle (eau), on l'ignore
             if (!IsValidAndWalkable(neighbor_pos, tilemap_instance)) {
                 continue; 
@@ -177,13 +213,13 @@ std::vector<sf::Vector2i> AStar::FindPath(
             }
 
             // Calcul du score G potentiel pour ce voisin (distance parcourue + 1)
-            float tentative_g_score = current_node.g_score + CalculateDistance(current_node.position, neighbor_pos);
+            float tentative_g_score = current_node.g_score + 1.0f;
 
             // Si on a trouvé un chemin plus court vers ce voisin que celui déjà connu
-            if (!g_scores_map.count(neighbor_pos) || tentative_g_score < g_scores_map[neighbor_pos]) {
+            if (tentative_g_score < g_scores[neighbor_index]) {
                 // Enregistre ce chemin comme le meilleur pour l'instant
-                came_from_map[neighbor_pos] = current_node.position;
-                g_scores_map[neighbor_pos] = tentative_g_score;
+                came_from[neighbor_index] = current_index;
+                g_scores[neighbor_index = tentative_g_score];
 
                 // Calcule l'estimation H et ajoute le voisin à la liste d'exploration
                 float neighbor_h_score = CalculateHeuristic(neighbor_pos, end_pos);
@@ -194,6 +230,72 @@ std::vector<sf::Vector2i> AStar::FindPath(
     }
 
     return {}; // Aucun chemin trouvé après exploration
+}
+
+    template <typename Predicate>
+    sf::Vector2i AStar::FindClosestTarget(
+        sf::Vector2i start_pos,
+        const Tilemap& tilemap_instance,
+        Predicate criteria) {
+    const sf::Vector2i& grid_size = tilemap_instance.gridSize_;
+
+    //Sécurité initiale
+    if (start_pos.x < 0 || start_pos.x >= grid_size.x ||
+        start_pos.y < 0 || start_pos.y >= grid_size.y) {
+        return {-1, -1}; // Non trouvé / Invalide
+    }
+
+    if (criteria(start_pos)) {
+        return start_pos;
+    }
+
+    std::vector<bool> visited(grid_size.x * grid_size.y, false);
+
+    std::queue<sf::Vector2i> open_set;
+
+    open_set.push(start_pos);
+    visited[start_pos.y * grid_size.x + start_pos.x] = true;
+
+    struct Direction { int dx; int dy; };
+    static constexpr Direction kDirection[] = { {0,-1}, {0,1}, {-1, 0}, {1,0} };
+
+    while (!open_set.empty()) {
+        sf::Vector2i current = open_set.front();
+        open_set.pop();
+
+        for (const auto& dir : kDirection) {
+            sf::Vector2i neighbor{current.x + dir.dx, current.y + dir.dy};
+
+            if (neighbor.x < 0 || neighbor.x >= grid_size.x ||
+                neighbor.y < 0 || neighbor.y >= grid_size.y) {
+                continue;
+            }
+
+            int index = neighbor.y * grid_size.x + neighbor.x;
+            if (visited[index]) {
+                continue;
+            }
+
+            if (!IsValidAndWalkable(neighbor, tilemap_instance) ||
+                !IsRessourceWalkable(neighbor, tilemap_instance)) {
+                if (criteria(neighbor)) {
+                    return neighbor;
+                }
+                continue;
+            }
+
+            if (criteria(neighbor)) {
+                return neighbor;
+            }
+
+            visited[index] = true;
+            open_set.push(neighbor);
+        }
+
+    }
+
+    return { -1, -1};
+
 }
 
 } // namespace api::motion

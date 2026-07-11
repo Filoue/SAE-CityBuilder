@@ -10,6 +10,7 @@
 #include <SFML/System/Vector2.hpp>
 #include "game_types.h"
 #include "tilemap.h"
+#include "graphics/building_renderer.h"
 
 class Tilemap; // Forward declaration
 
@@ -20,7 +21,7 @@ public:
         Housing type;
     };
 
-    void Setup(float tile_size, sf::Vector2f grid_offset, Tilemap* tilemap);
+    void Setup(float tile_size, sf::Vector2f grid_offset, Tilemap& tilemap);
     void HandleEvent(const sf::Event& event, const sf::RenderWindow& window);
     void Update(const sf::RenderWindow& window);void Building();
     void Draw(sf::RenderWindow& window);
@@ -37,7 +38,12 @@ private:
     int selection = 0;
     std::vector<sf::RectangleShape> buildinglist_;
     sf::Color color_;
-    sf::RectangleShape shape;
+
+    BuildingRenderer building_renderer_;
+
+    std::unique_ptr<sf::Texture> hunterHouse_;
+    std::unique_ptr<sf::Texture> minerHouse_;
+    std::unique_ptr<sf::Texture> woodCutterHouse_;
 
 
 
@@ -49,5 +55,6 @@ private:
     sf::Vector2i hovered_grid_pos_;
     std::vector<PlacedBuilding> buildings_;
     Tilemap* tilemap_;
+    Housing housing_;
 };
 #endif //CITYBUILDER_EDIT_MOD_H

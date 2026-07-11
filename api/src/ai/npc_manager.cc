@@ -4,6 +4,7 @@
 namespace api::ai {
 
     void NpcManager::SetupManager(int num_npcs, sf::Vector2i world_size, const Tilemap& _map, float _tile_size, sf::Vector2f _grid_offset){
+        npcs_.reserve(num_npcs);
         for (int i = 0; i < num_npcs; ++i) {
             // Corrected line: Create a new NormalizeNpc object and move a unique_ptr to it into the vector
             npcs_.emplace_back(std::make_unique<NormalizeNpc>());

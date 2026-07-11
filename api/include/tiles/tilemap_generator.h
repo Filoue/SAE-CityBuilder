@@ -7,7 +7,6 @@
 
 #include <random>
 #include <ranges>
-#include <span>
 
 #include "tile.h"
 #include "tilemap.h"
@@ -115,6 +114,32 @@ namespace tiles::generator {
 
         return ressourceMap;
 
+    }
+
+    inline std::vector<Tile<Housing>> PlaceAHouse(sf::Vector2i size, sf::Vector2f tileSize, Housing h) {
+        std::vector<Tile<Housing>> house;
+
+        for (auto x = 0; size.x > x; x++) {
+            for (auto y = 0; size.y > y ; y++) {
+                int index = y * size.x + x;
+                sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
+                switch (h) {
+                    case Housing::kHunterHouse:
+                        house.emplace_back(worldPos, Housing::kHunterHouse, false);
+                        break;
+                    case Housing::kMinerHouse:
+                        house.emplace_back(worldPos, Housing::kMinerHouse, false);
+                        break;
+                    case Housing::kWoodCutterHouse:
+                        house.emplace_back(worldPos, Housing::kWoodCutterHouse, false);
+                        break;
+                    case Housing::kNone:
+                        house.emplace_back(worldPos, Housing::kNone, false);
+
+                }
+            }
+        }
+        return house;
     }
 
 };

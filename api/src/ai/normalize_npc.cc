@@ -86,7 +86,6 @@ namespace api::ai {
 
     void NormalizeNpc::SetTargetGridPosition(sf::Vector2i grid_pos) {
         if (!tilemap_ptr_) {
-            std::println("Error: Tilemap pointer not set for NormalizeNpc.");
             current_path_.clear();
             current_path_index_ = 0;
             return;
@@ -98,7 +97,6 @@ namespace api::ai {
         // Ensure start_grid_pos is within bounds before pathfinding
         if (start_grid_pos.x < 0 || start_grid_pos.x >= static_cast<int>(tilemap_ptr_->gridSize_.x) ||
             start_grid_pos.y < 0 || start_grid_pos.y >= static_cast<int>(tilemap_ptr_->gridSize_.y)) {
-            std::println("Error: NPC's current grid position ({}, {}) is out of bounds for pathfinding.", start_grid_pos.x, start_grid_pos.y);
             current_path_.clear();
             current_path_index_ = 0;
             return;
@@ -113,14 +111,12 @@ namespace api::ai {
         } else {
             // If no path found, stay at current position
             motor_.SetDestination(motor_.GetPosition());
-            std::println("No path found to target grid position: {}, {}", grid_pos.x, grid_pos.y);
             // Do NOT call PickRandomDestination() here. Let the BT handle retrying.
         }
     }
 
     Status NormalizeNpc::PickRandomDestination(){
         if (!tilemap_ptr_) {
-            std::println("Error: Tilemap pointer not set for NormalizeNpc.");
             return Status::kFailure;
         }
 
@@ -129,7 +125,6 @@ namespace api::ai {
         int grid_height = static_cast<int>(tilemap_ptr_->gridSize_.y);
 
         if (grid_width <= 0 || grid_height <= 0) {
-            std::println("Error: Invalid grid dimensions from Tilemap.");
             return Status::kFailure;
         }
 
@@ -139,7 +134,7 @@ namespace api::ai {
         sf::Vector2i random_grid_pos;
         bool found_walkable = false;
         // Try to find a walkable random position
-        for (int i = 0; i < 1000; ++i) { // Limit attempts to avoid infinite loop
+        for (int i = 0; i < 100; ++i) { // Limit attempts to avoid infinite loop
             random_grid_pos = {x_dist(rng_), y_dist(rng_)};
             // Use Tilemap's public method to check walkability
             TerrainTiles tile_type = tilemap_ptr_->GetTerrainTileType(random_grid_pos);
@@ -153,12 +148,10 @@ namespace api::ai {
         if (found_walkable) {
             SetTargetGridPosition(random_grid_pos);
             if (current_path_.empty()) { // If SetTargetGridPosition failed to find a path
-                std::println("PickRandomDestination: Found walkable tile but A* failed to find path.");
                 return Status::kFailure;
             }
             return Status::kSuccess;
         } else {
-            std::println("Could not find a walkable random destination after 1000 attempts.");
             return Status::kFailure;
         }
     }
@@ -187,7 +180,6 @@ namespace api::ai {
     }
 
     Status NormalizeNpc::Locked() {
-        std::println("Locked");
         return Status::kSuccess;
     }
 

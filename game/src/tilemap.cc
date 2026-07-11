@@ -3,7 +3,6 @@
 //
 
 #include "tilemap.h"
-#include <algorithm>
 #include <print>
 
 #include "game_types.h"
@@ -45,7 +44,6 @@ void Tilemap::Setup(sf::Vector2i gridSize, sf::Vector2f gridOffset){
             terrain_renderer_.AddTile(tile.pos, gridOffset, terrain_tilesheet_.GetBounds(tile.type));
         }
     } else {
-        std::println("ERREUR : Impossible de charger la texture du terrain ! Vérifiez le chemin et le répertoire de travail.");
     }
 
     if (ressources_tilesheet_.InitTileSheet("_assets/tiles/RTS_medieval@2_no_margins_transparent - Copie.png", 128)) {
@@ -65,13 +63,20 @@ void Tilemap::Setup(sf::Vector2i gridSize, sf::Vector2f gridOffset){
         }
 
     } else {
-        std::println("ERREUR : Impossible de charger la texture des ressources ! Vérifiez le chemin et le répertoire de travail.");
+    }
+
+    if (house_tilesheet_.InitTileSheet("_assets/tiles/RTS_medieval@2_no_margins_transparent - Copie.png", 128)) {
+        house_tilesheet_.AddTile(Housing::kHunterHouse, 2, 3);
+        house_tilesheet_.AddTile(Housing::kMinerHouse, 1, 3);
+        house_tilesheet_.AddTile(Housing::kWoodCutterHouse, 0, 3);
+    }else {
     }
 }
 
 void Tilemap::Draw(sf::RenderWindow &window){
     terrain_renderer_.Draw(window);
     ressources_renderer_.Draw(window);
+    house_renderer_.Draw(window);
 }
 
 std::mdspan<sf::Vector2i, std::dextents<std::size_t, 2>> Tilemap::GetWalkableTiles(){

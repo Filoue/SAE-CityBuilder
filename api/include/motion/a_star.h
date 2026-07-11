@@ -37,21 +37,23 @@ public:
     // Returns a vector of grid positions (sf::Vector2i) representing the path.
     // Returns an empty vector if no path is found.
     static std::vector<sf::Vector2i> FindPath(
-        sf::Vector2i start_pos,
-        sf::Vector2i end_pos,
-        const Tilemap& tilemap_instance
+        const sf::Vector2i &start_pos,
+        const sf::Vector2i &end_pos,
+        const Tilemap&tilemap_instance
     );
+    template <class Predicate> sf::Vector2i FindClosestTarget(sf::Vector2i start_pos,
+        const Tilemap&tilemap_instance,
+        Predicate criteria);
 
 private:
     // Helper functions (static members as they don't depend on AStar instance state)
-    static int CalculateHeuristic(sf::Vector2i pos1, sf::Vector2i pos2);
+    static int CalculateHeuristic(const sf::Vector2i &pos1, const sf::Vector2i &pos2);
     static float CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2);
-    static std::vector<sf::Vector2i> GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size);
-    static bool IsValidAndWalkable(sf::Vector2i pos, const Tilemap& tilemap_instance);
-    static bool IsRessourceWalkable(sf::Vector2i pos, const Tilemap&tilemap_instance);
+    static void GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size, std::vector<sf::Vector2i>& neighbors);
+    static bool IsValidAndWalkable(const sf::Vector2i &pos, const Tilemap&tilemap_instance);
+    static bool IsRessourceWalkable(const sf::Vector2i &pos, const Tilemap&tilemap_instance);
     static std::vector<sf::Vector2i> ReconstructPath(
-        const std::map<sf::Vector2i, sf::Vector2i>& came_from,
-        sf::Vector2i current_pos
+        const std::vector<int>&came_from,int current_index,const sf::Vector2i&grid_size
     );
 };
 

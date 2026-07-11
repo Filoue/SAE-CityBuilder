@@ -22,6 +22,8 @@ class Tilemap {
     graphics::TilemapRenderer ressources_renderer_;
     graphics::Tilesheet<RessourcesTiles> ressources_tilesheet_;
 
+    graphics::TilemapRenderer house_renderer_;
+    graphics::Tilesheet<Housing> house_tilesheet_;
 
 
 
@@ -32,9 +34,11 @@ public:
 
     std::vector<api::tiles::Tile<TerrainTiles> > terrain;
     std::vector<api::tiles::Tile<RessourcesTiles>> ressources;
+    std::vector<api::tiles::Tile<Housing>> house_;
 
     std::mdspan<sf::Vector2i, std::dextents<std::size_t, 2>> GetWalkableTiles(); // Corrected return type
     RessourcesTiles GetRessourcesTiles(sf::Vector2i pos) const;
+
     size_t PosToIndex(sf::Vector2i pos) const;
     sf::Vector2i IndexToPos(int index);
 
@@ -44,6 +48,7 @@ public:
     RessourcesTiles GetRessourcesTileType(sf::Vector2i pos)const;
 
     void Setup(sf::Vector2i gridSize, sf::Vector2f gridOffset);
+
     void Draw(sf::RenderWindow &window);
 };
 

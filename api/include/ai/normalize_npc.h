@@ -15,7 +15,7 @@
 #include "ai/bt_node.h"
 #include "motion/motor.h"
 #include "motion/a_star.h" // Include AStar
-#include "../../../game/include/tilemap.h" // Include Tilemap
+#include "tilemap.h" // Include Tilemap
 
 namespace api::ai {
     class NormalizeNpc {
