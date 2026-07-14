@@ -7,15 +7,6 @@
 #include <vector>
 
 // // Define operator< for sf::Vector2i to allow its use as a key in std::map
-// namespace sf {
-//     bool operator<(const sf::Vector2i& lhs, const sf::Vector2i& rhs) {
-//         if (lhs.x != rhs.x) {
-//             return lhs.x < rhs.x;
-//         }
-//         return lhs.y < rhs.y;
-//     }
-// } // namespace sf
-
 namespace api::motion {
 
 // --- Helper Functions Implementation ---
@@ -25,40 +16,6 @@ int AStar::CalculateHeuristic(const sf::Vector2i& pos1,const sf::Vector2i& pos2)
     // C'est une estimation (H) du coût restant pour atteindre la cible.
     return std::abs(pos1.x - pos2.x) + std::abs(pos1.y - pos2.y);
 }
-
-// float AStar::CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2) {
-//     // Coût réel (G) pour se déplacer d'une tuile à sa voisine directe.
-//     int dx = std::abs(pos1.x - pos2.x);
-//     int dy = std::abs(pos1.y - pos2.y);
-//
-//     // Si les tuiles sont adjacentes, le coût est de 1.
-//     if (dx + dy == 1) return 1.0f;
-//     return 0.0f; // Même position
-// }
-
-    //TODO vector to array constexpr
-
-// void AStar::GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size, std::vector<sf::Vector2i>& neighbors) {
-//
-//     // Parcourt les tuiles adjacentes (incluant les diagonales dans la boucle)
-//     for (int dx = -1; dx <= 1; ++dx) {
-//         for (int dy = -1; dy <= 1; ++dy) {
-//             // On filtre pour ne garder que les mouvements orthogonaux (Haut, Bas, Gauche, Droite)
-//             // La somme des valeurs absolues de dx et dy doit être 1.
-//             if (std::abs(dx) + std::abs(dy) != 1) {
-//                 continue;
-//             }
-//
-//             sf::Vector2i neighbor_pos(pos.x + dx, pos.y + dy);
-//
-//             // Vérification des limites de la grille
-//             if (neighbor_pos.x >= 0 && neighbor_pos.x < grid_size.x &&
-//                 neighbor_pos.y >= 0 && neighbor_pos.y < grid_size.y) {
-//                 neighbors.push_back(neighbor_pos);
-//             }
-//         }
-//     }
-// }
 
 bool AStar::IsValidAndWalkable(const sf::Vector2i& pos, const Tilemap& tilemap_instance) {
     // Sécurité : vérifie à nouveau les limites de la grille
@@ -117,11 +74,6 @@ std::vector<sf::Vector2i> AStar::ReconstructPath(
     std::vector<sf::Vector2i> total_path;
     total_path.reserve(32);
 
-    // // Remonte la chaîne des parents stockée dans came_from_map
-    // while (came_from.count(current_pos)) {
-    //     current_pos = came_from.at(current_pos);
-    //     total_path.push_back(current_pos);
-    // }
     while (current_index != -1) {
         total_path.push_back({current_index % grid_size.x, current_index / grid_size.x});
         current_index = came_from[current_index];
@@ -138,9 +90,6 @@ std::vector<sf::Vector2i> AStar::FindPath(
     const sf::Vector2i& start_pos,
     const sf::Vector2i& end_pos,
     const Tilemap& tilemap_instance) {
-
-    // std::vector<sf::Vector2i> neighbours;
-    // neighbours.reserve(4);
 
     // Validation initiale : si le point de départ ou d'arrivée est dans l'eau
     if (!IsValidAndWalkable(start_pos, tilemap_instance) || !IsValidAndWalkable(end_pos, tilemap_instance)) {
@@ -178,18 +127,12 @@ std::vector<sf::Vector2i> AStar::FindPath(
         int current_index = current_node.position.y * grid_size.x + current_node.position.x;
 
         // // Condition de victoire : on a atteint la destination
-        // if (current_node.position == end_pos) {
-        //     return ReconstructPath(came_from_map, current_node.position);
-        // }
         if (current_index == end_index) {
             return ReconstructPath(came_from, current_index, grid_size);
         }
 
         if (closed_set[current_index]) continue;
         closed_set[current_index] = true;
-
-        // neighbours.clear();
-        // GetNeighbors(current_node.position, tilemap_instance.gridSize_, neighbours);
 
         // Exploration des 4 voisins (Haut, Bas, Gauche, Droite)
         for (const auto& dir : kDirection) {

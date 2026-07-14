@@ -41,7 +41,8 @@ public:
         const sf::Vector2i &end_pos,
         const Tilemap&tilemap_instance
     );
-    template <class Predicate> sf::Vector2i FindClosestTarget(sf::Vector2i start_pos,
+    template <class Predicate>
+    static sf::Vector2i FindClosestTarget(sf::Vector2i start_pos,
         const Tilemap&tilemap_instance,
         Predicate criteria);
 

@@ -37,6 +37,7 @@ namespace api::ai {
         [[nodiscard]] core::ai::behaviour_tree::Status PickRandomDestination();
         [[nodiscard]] core::ai::behaviour_tree::Status MoveToDestination(); // No longer const as it modifies path_index
         [[nodiscard]] core::ai::behaviour_tree::Status Locked();
+        [[nodiscard]] core::ai::behaviour_tree::Status GetRessourceToGrid();
 
         // A* related members
         std::vector<sf::Vector2i> current_path_; // Stores the path from A*
@@ -52,6 +53,8 @@ namespace api::ai {
         motion::Motor motor_;
 
         std::unique_ptr<core::ai::behaviour_tree::Node> bt_root_;
+
+        sf::Vector2i closeest_rock_;
 
         sf::Vector2i world_size_{};
         std::mt19937 rng_{std::random_device{}()};

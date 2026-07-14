@@ -40,7 +40,7 @@ namespace api::ai {
         using namespace node_factory;
 
         auto move = MakeAction([this]{return MoveToDestination();});
-        auto pick = MakeAction([this]{return PickRandomDestination();});
+        auto pick = MakeAction([this]{return GetRessourceToGrid();});
 
         auto wanderSequence = std::make_unique<SequenceNode>();
         wanderSequence->AddChild(std::move(pick));
@@ -82,6 +82,23 @@ namespace api::ai {
         // but for grid indices, static_cast<int> is usually fine for positive values.
         return sf::Vector2i(static_cast<int>(std::floor(adjusted_x / tile_size_)),
                             static_cast<int>(std::floor(adjusted_y / tile_size_)));
+    }
+
+    Status NormalizeNpc::GetRessourceToGrid() {
+        sf::Vector2i position = static_cast<sf::Vector2i>(sprite_->getPosition());
+
+        sf::Vector2i closeest_rock = motion::AStar::FindClosestTarget(position, *tilemap_ptr_, [&](sf::Vector2i pos) {
+            return tilemap_ptr_->GetRessourcesTileType(pos) == RessourcesTiles::kRock;
+        });
+
+        if (closeest_rock.x != -1) {
+            SetTargetGridPosition(closeest_rock);
+
+            return Status::kSuccess;
+        }else {
+            return  Status::kFailure;
+        }
+
     }
 
     void NormalizeNpc::SetTargetGridPosition(sf::Vector2i grid_pos) {
