@@ -44,27 +44,6 @@ bool AStar::IsValidAndWalkable(const sf::Vector2i& pos, const Tilemap& tilemap_i
 
 }
 
-bool AStar::IsRessourceWalkable(const sf::Vector2i& pos, const Tilemap& tilemap_instance) {
-    if (pos.x < 0 || pos.x >= tilemap_instance.gridSize_.x ||
-    pos.y < 0 || pos.y >= tilemap_instance.gridSize_.y) {
-        return false;
-    }
-    RessourcesTiles ressource_type = tilemap_instance.GetRessourcesTileType(pos);
-
-    // TODO need to look why the png walk on trees and rocks
-
-    switch (ressource_type) {
-        case RessourcesTiles::kNone:
-        case RessourcesTiles::kFood:
-            return true;
-        case RessourcesTiles::kRock:
-        case RessourcesTiles::kWood:
-            return false;
-        default:
-            return false;
-    }
-}
-
 std::vector<sf::Vector2i> AStar::ReconstructPath(
     const std::vector<int>& came_from,
     int current_index,
@@ -95,10 +74,6 @@ std::vector<sf::Vector2i> AStar::FindPath(
     if (!IsValidAndWalkable(start_pos, tilemap_instance) || !IsValidAndWalkable(end_pos, tilemap_instance)) {
         return {}; 
     }
-    if (!IsRessourceWalkable(start_pos, tilemap_instance) || !IsRessourceWalkable(end_pos, tilemap_instance)) {
-        return {};
-    }
-
     const sf::Vector2i& grid_size = tilemap_instance.gridSize_;
     int total_cells = grid_size.x * grid_size.y;
     int start_index = start_pos.y * grid_size.x + start_pos.x;
@@ -151,9 +126,6 @@ std::vector<sf::Vector2i> AStar::FindPath(
             if (!IsValidAndWalkable(neighbor_pos, tilemap_instance)) {
                 continue; 
             }
-            if (!IsRessourceWalkable(neighbor_pos, tilemap_instance)) {
-                continue;
-            }
 
             // Calcul du score G potentiel pour ce voisin (distance parcourue + 1)
             float tentative_g_score = current_node.g_score + 1.0f;
@@ -175,70 +147,13 @@ std::vector<sf::Vector2i> AStar::FindPath(
     return {}; // Aucun chemin trouvé après exploration
 }
 
-    template <typename Predicate>
-    sf::Vector2i AStar::FindClosestTarget(
-        sf::Vector2i start_pos,
-        const Tilemap& tilemap_instance,
-        Predicate criteria) {
-    const sf::Vector2i& grid_size = tilemap_instance.gridSize_;
-
-    //Sécurité initiale
-    if (start_pos.x < 0 || start_pos.x >= grid_size.x ||
-        start_pos.y < 0 || start_pos.y >= grid_size.y) {
-        return {-1, -1}; // Non trouvé / Invalide
-    }
-
-    if (criteria(start_pos)) {
-        return start_pos;
-    }
-
-    std::vector<bool> visited(grid_size.x * grid_size.y, false);
-
-    std::queue<sf::Vector2i> open_set;
-
-    open_set.push(start_pos);
-    visited[start_pos.y * grid_size.x + start_pos.x] = true;
-
-    struct Direction { int dx; int dy; };
-    static constexpr Direction kDirection[] = { {0,-1}, {0,1}, {-1, 0}, {1,0} };
-
-    while (!open_set.empty()) {
-        sf::Vector2i current = open_set.front();
-        open_set.pop();
-
-        for (const auto& dir : kDirection) {
-            sf::Vector2i neighbor{current.x + dir.dx, current.y + dir.dy};
-
-            if (neighbor.x < 0 || neighbor.x >= grid_size.x ||
-                neighbor.y < 0 || neighbor.y >= grid_size.y) {
-                continue;
-            }
-
-            int index = neighbor.y * grid_size.x + neighbor.x;
-            if (visited[index]) {
-                continue;
-            }
-
-            if (!IsValidAndWalkable(neighbor, tilemap_instance) ||
-                !IsRessourceWalkable(neighbor, tilemap_instance)) {
-                if (criteria(neighbor)) {
-                    return neighbor;
-                }
-                continue;
-            }
-
-            if (criteria(neighbor)) {
-                return neighbor;
-            }
-
-            visited[index] = true;
-            open_set.push(neighbor);
-        }
-
-    }
-
-    return { -1, -1};
-
-}
+//     template <typename Predicate>
+//     sf::Vector2i AStar::FindClosestTarget(
+//         sf::Vector2i start_pos,
+//         const Tilemap& tilemap_instance,
+//         Predicate criteria) {
+//
+//
+// }
 
 } // namespace api::motion

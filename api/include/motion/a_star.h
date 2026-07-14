@@ -41,10 +41,70 @@ public:
         const sf::Vector2i &end_pos,
         const Tilemap&tilemap_instance
     );
+
+
     template <class Predicate>
     static sf::Vector2i FindClosestTarget(sf::Vector2i start_pos,
         const Tilemap&tilemap_instance,
-        Predicate criteria);
+        Predicate criteria) {
+        const sf::Vector2i& grid_size = tilemap_instance.gridSize_;
+
+        //Sécurité initiale
+        if (start_pos.x < 0 || start_pos.x >= grid_size.x ||
+            start_pos.y < 0 || start_pos.y >= grid_size.y) {
+            return {-1, -1}; // Non trouvé / Invalide
+            }
+
+        if (criteria(start_pos)) {
+            return start_pos;
+        }
+
+        std::vector<bool> visited(grid_size.x * grid_size.y, false);
+
+        std::queue<sf::Vector2i> open_set;
+
+        open_set.push(start_pos);
+        visited[start_pos.y * grid_size.x + start_pos.x] = true;
+
+        struct Direction { int dx; int dy; };
+        static constexpr Direction kDirection[] = { {0,-1}, {0,1}, {-1, 0}, {1,0} };
+
+        while (!open_set.empty()) {
+            sf::Vector2i current = open_set.front();
+            open_set.pop();
+
+            for (const auto& dir : kDirection) {
+                sf::Vector2i neighbor{current.x + dir.dx, current.y + dir.dy};
+
+                if (neighbor.x < 0 || neighbor.x >= grid_size.x ||
+                    neighbor.y < 0 || neighbor.y >= grid_size.y) {
+                    continue;
+                    }
+
+                int index = neighbor.y * grid_size.x + neighbor.x;
+                if (visited[index]) {
+                    continue;
+                }
+
+                if (!IsValidAndWalkable(neighbor, tilemap_instance)) {
+                    if (criteria(neighbor)) {
+                        return neighbor;
+                    }
+                    continue;
+                    }
+
+                if (criteria(neighbor)) {
+                    return neighbor;
+                }
+
+                visited[index] = true;
+                open_set.push(neighbor);
+            }
+
+        }
+
+        return { -1, -1};
+    }
 
 private:
     // Helper functions (static members as they don't depend on AStar instance state)
@@ -52,7 +112,6 @@ private:
     static float CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2);
     static void GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size, std::vector<sf::Vector2i>& neighbors);
     static bool IsValidAndWalkable(const sf::Vector2i &pos, const Tilemap&tilemap_instance);
-    static bool IsRessourceWalkable(const sf::Vector2i &pos, const Tilemap&tilemap_instance);
     static std::vector<sf::Vector2i> ReconstructPath(
         const std::vector<int>&came_from,int current_index,const sf::Vector2i&grid_size
     );

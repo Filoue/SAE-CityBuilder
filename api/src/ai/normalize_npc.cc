@@ -51,6 +51,8 @@ namespace api::ai {
 
     void NormalizeNpc::Update(float dt){
         motor_.Update(dt);
+
+        std::print("NPC Position: ({}, {}) | dt: {}\n", motor_.GetPosition().x, motor_.GetPosition().y, dt);
         if (sprite_.has_value()) {
             sprite_->setPosition(motor_.GetPosition());
         }
@@ -85,15 +87,17 @@ namespace api::ai {
     }
 
     Status NormalizeNpc::GetRessourceToGrid() {
-        sf::Vector2i position = static_cast<sf::Vector2i>(sprite_->getPosition());
+
+        if (!current_path_.empty()) return Status::kSuccess;
+
+        sf::Vector2i position = WorldToGrid(motor_.GetPosition());
 
         sf::Vector2i closeest_rock = motion::AStar::FindClosestTarget(position, *tilemap_ptr_, [&](sf::Vector2i pos) {
             return tilemap_ptr_->GetRessourcesTileType(pos) == RessourcesTiles::kRock;
         });
 
-        if (closeest_rock.x != -1) {
+        if (closeest_rock.x != -1 && closeest_rock.y != -1) {
             SetTargetGridPosition(closeest_rock);
-
             return Status::kSuccess;
         }else {
             return  Status::kFailure;
@@ -124,6 +128,11 @@ namespace api::ai {
 
         if (!current_path_.empty()) {
             // Set the first waypoint as the motor's destination
+            if (current_path_.size() > 1 && current_path_[0] == start_grid_pos) {
+                current_path_index_ = 1;
+            }else {
+                current_path_index_ = 0;
+            }
             motor_.SetDestination(GridToWorld(current_path_[current_path_index_]));
         } else {
             // If no path found, stay at current position
