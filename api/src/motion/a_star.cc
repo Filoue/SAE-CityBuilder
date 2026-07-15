@@ -147,13 +147,4 @@ std::vector<sf::Vector2i> AStar::FindPath(
     return {}; // Aucun chemin trouvé après exploration
 }
 
-//     template <typename Predicate>
-//     sf::Vector2i AStar::FindClosestTarget(
-//         sf::Vector2i start_pos,
-//         const Tilemap& tilemap_instance,
-//         Predicate criteria) {
-//
-//
-// }
-
 } // namespace api::motion

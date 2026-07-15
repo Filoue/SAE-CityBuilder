@@ -67,7 +67,7 @@ public:
         visited[start_pos.y * grid_size.x + start_pos.x] = true;
 
         struct Direction { int dx; int dy; };
-        static constexpr Direction kDirection[] = { {0,-1}, {0,1}, {-1, 0}, {1,0} };
+        static constexpr Direction kDirection[] = { {-1,0}, {1,0}, {0, -1}, {0,1} };
 
         while (!open_set.empty()) {
             sf::Vector2i current = open_set.front();
@@ -79,19 +79,12 @@ public:
                 if (neighbor.x < 0 || neighbor.x >= grid_size.x ||
                     neighbor.y < 0 || neighbor.y >= grid_size.y) {
                     continue;
-                    }
+                }
 
-                int index = neighbor.y * grid_size.x + neighbor.x;
+                int index =+ neighbor.y * grid_size.x + neighbor.x;
                 if (visited[index]) {
                     continue;
                 }
-
-                if (!IsValidAndWalkable(neighbor, tilemap_instance)) {
-                    if (criteria(neighbor)) {
-                        return neighbor;
-                    }
-                    continue;
-                    }
 
                 if (criteria(neighbor)) {
                     return neighbor;

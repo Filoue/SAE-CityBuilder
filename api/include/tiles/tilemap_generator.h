@@ -91,8 +91,8 @@ namespace tiles::generator {
 
 
 
-        for (auto x = 0; size.x > x; x++) {
-            for (auto y = 0; size.y > y; y++) {
+        for (auto y = 0; size.y > y; y++) {
+            for (auto x = 0; size.x > x; x++) {
                 int index = y * size.x + x;
                 sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
                 float ressourceNoiseValue = std::abs(ressourceNoise.GetNoise(worldPos.x, worldPos.y));
@@ -107,7 +107,7 @@ namespace tiles::generator {
                         ressourceMap.emplace_back(worldPos, RessourcesTiles::kRock, false);
                     }
                 }else {
-                    ressourceMap.emplace_back(worldPos, RessourcesTiles::kNone, false);
+                    ressourceMap.emplace_back(worldPos, RessourcesTiles::kNone, true);
                 }
             }
         }
@@ -119,8 +119,8 @@ namespace tiles::generator {
     inline std::vector<Tile<Housing>> PlaceAHouse(sf::Vector2i size, sf::Vector2f tileSize, Housing h) {
         std::vector<Tile<Housing>> house;
 
-        for (auto x = 0; size.x > x; x++) {
-            for (auto y = 0; size.y > y ; y++) {
+        for (auto y = 0; size.y > y; y++) {
+            for (auto x = 0; size.x > x ; x++) {
                 int index = y * size.x + x;
                 sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
                 switch (h) {

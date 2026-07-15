@@ -18,7 +18,7 @@ void Tilemap::Setup(sf::Vector2i gridSize, sf::Vector2f gridOffset){
     // Populate grid_coordinates_ with all grid positions
     grid_coordinates_.clear();
     grid_coordinates_.reserve(gridSize_.x * gridSize_.y);
-    for (int y = 0; y < gridSize_.y; ++y) { // Cast to int
+    for (int y = 0; y < gridSize_.x; ++y) { // Cast to int
         for (int x = 0; x < gridSize_.x; ++x) { // Cast to int
             grid_coordinates_.emplace_back(x, y);
         }
@@ -88,8 +88,8 @@ size_t Tilemap::PosToIndex(sf::Vector2i pos) const {
 }
 
 sf::Vector2i Tilemap::IndexToPos(int index) {
-    int x = index % gridSize_.x;
-    int y = index / gridSize_.x;
+    int y = index % gridSize_.y;
+    int x = index / gridSize_.x;
     return {x, y};
 }
 
@@ -115,21 +115,7 @@ TerrainTiles Tilemap::GetTerrainTileType(sf::Vector2i pos) const {
 }
 RessourcesTiles Tilemap::GetRessourcesTileType(sf::Vector2i pos) const {
     // Perform bounds checking
-    if (pos.x < 0 || pos.x >=gridSize_.x || // Cast to int
-        pos.y < 0 || pos.y >= gridSize_.y) { // Cast to int
-        // Return a default non-walkable type or throw an error
-        // For simplicity, returning a non-walkable type (e.g., kWaterA)
-        return RessourcesTiles::kWood;
-    }
-
     // Calculate the 1D index from 2D coordinates (assuming row-major order)
     size_t index = PosToIndex(pos); // Cast to int
-
-    // Ensure index is within bounds of the terrain vector
-    if (index >= ressources.size()) {
-        // This case should ideally not be reached if gridSize_ and terrain.size() are consistent
-        return RessourcesTiles::kWood; // Fallback
-    }
-
     return ressources[index].type;
 }

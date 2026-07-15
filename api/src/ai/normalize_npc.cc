@@ -39,8 +39,8 @@ namespace api::ai {
         using namespace core::ai::behaviour_tree;
         using namespace node_factory;
 
-        auto move = MakeAction([this]{return MoveToDestination();});
         auto pick = MakeAction([this]{return GetRessourceToGrid();});
+        auto move = MakeAction([this]{return MoveToDestination();});
 
         auto wanderSequence = std::make_unique<SequenceNode>();
         wanderSequence->AddChild(std::move(pick));
@@ -99,9 +99,9 @@ namespace api::ai {
         if (closeest_rock.x != -1 && closeest_rock.y != -1) {
             SetTargetGridPosition(closeest_rock);
             return Status::kSuccess;
-        }else {
-            return  Status::kFailure;
         }
+
+        return  Status::kFailure;
 
     }
 

@@ -74,7 +74,7 @@ namespace game {
                     }
 
                     if (key->code == sf::Keyboard::Key::Num1) {
-                        npc_manager.AddNpc(1000, world_grid_dimensions, map_, 32, {0.f, 0.f});
+                        npc_manager.AddNpc(1, world_grid_dimensions, map_, 32, {0.f, 0.f});
                     }
                     if (key->code == sf::Keyboard::Key::E) {
                         edit_mode.Toggle();
