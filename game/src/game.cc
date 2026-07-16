@@ -9,20 +9,26 @@
 #include "graphics/tilemap_renderer.h"
 #include "graphics/tilesheet.h"
 #include "editMode/edit_mod.h"
+#include "worldSettings/world_settings.h"
+#include "resource_manager.h"
 
 namespace game {
     namespace {
-        constexpr sf::Vector2i world_grid_dimensions = {120, 68};
-        constexpr sf::Vector2f window_size_f = {1920.f, 1080.f};
-        constexpr sf::Vector2u window_size_u = {1920u, 1080u};
+        constexpr sf::Vector2f window_size_f = {
+            static_cast<float>(api::tiles::WorldSettings::nb_tiles.x * api::tiles::WorldSettings::tile_size.x),
+            static_cast<float>(api::tiles::WorldSettings::nb_tiles.y * api::tiles::WorldSettings::tile_size.y)
+        };
+        constexpr sf::Vector2u window_size_u = {
+            static_cast<unsigned>(api::tiles::WorldSettings::nb_tiles.x * api::tiles::WorldSettings::tile_size.x),
+            static_cast<unsigned>(api::tiles::WorldSettings::nb_tiles.y * api::tiles::WorldSettings::tile_size.y)
+        };
 
         sf::Clock clock_;
         sf::RenderWindow window_;
         bool isFullscreen_ = false;
 
-        api::ai::NpcManager npc_manager;
-        api::ai::NormalizeNpc npc_;
         EditMode edit_mode;
+        ResourceManager resource_manager;
 
         Tilemap map_;
         graphics::Camera camera_;
@@ -31,10 +37,18 @@ namespace game {
             // Create the main window
             window_.create(sf::VideoMode::getDesktopMode(), "SFML window", sf::State::Fullscreen);
             camera_.Setup(window_size_f);
-            map_.Setup(world_grid_dimensions, {32.f, 32.f});
-            //npc_.Setup("_assets/kenney_medieval-rts/PNG/Default size/Unit/medievalUnit_01.png", world_grid_dimensions, {0,0}, map_, 32.f, {0.f, 0.f});
-            npc_manager.SetupManager(1, world_grid_dimensions, map_, 32, {0.f, 0.f});
-            edit_mode.Setup(32.f, {0.f, 0.f}, map_);
+            map_.Setup(api::tiles::WorldSettings::nb_tiles, sf::Vector2f(api::tiles::WorldSettings::tile_size));
+            api::ai::NpcManager::GetInstance().SetupManager(1, map_, resource_manager, {5, 5});
+            edit_mode.Setup(api::tiles::WorldSettings::tile_size.x, sf::Vector2f(api::tiles::WorldSettings::tile_size), map_, resource_manager);
+        
+            // Add initial resources
+            resource_manager.AddWood(10);
+            resource_manager.AddStone(5);
+
+            // Add initial houses
+            edit_mode.buildings_.push_back({{5, 5}, Housing::kWoodCutterHouse});
+            edit_mode.buildings_.push_back({{10, 10}, Housing::kMinerHouse});
+            edit_mode.Building();
         }
 
         void ToggleFullscreen(){
@@ -74,7 +88,7 @@ namespace game {
                     }
 
                     if (key->code == sf::Keyboard::Key::Num1) {
-                        npc_manager.AddNpc(1, world_grid_dimensions, map_, 32, {0.f, 0.f});
+                        api::ai::NpcManager::GetInstance().AddNpc(1, map_, Housing::kWoodCutterHouse, {0, 0});
                     }
                     if (key->code == sf::Keyboard::Key::E) {
                         edit_mode.Toggle();
@@ -86,15 +100,13 @@ namespace game {
 
             camera_.Update(dt);
             camera_.Apply(window_);
-            //npc_.Update(dt);
-            npc_manager.Update(dt);
+            api::ai::NpcManager::GetInstance().Update(dt);
             edit_mode.Update(window_);
 
             // Graphic frame
             window_.clear();
             map_.Draw(window_);
-            npc_.Draw(window_);
-            npc_manager.Draw(window_);
+            api::ai::NpcManager::GetInstance().Draw(window_);
             edit_mode.Draw(window_);
             window_.display();
         }

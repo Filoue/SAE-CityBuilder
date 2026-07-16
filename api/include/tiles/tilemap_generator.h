@@ -10,14 +10,15 @@
 
 #include "tile.h"
 #include "tilemap.h"
+#include "worldSettings/world_settings.h"
 
 namespace tiles::generator {
 
     using namespace api::tiles;
-    inline std::vector<Tile<TerrainTiles>> GenerateTerrain(sf::Vector2i size, sf::Vector2f tileSize){
+    inline std::vector<Tile<TerrainTiles>> GenerateTerrain(){
 
         std::vector<Tile<TerrainTiles>> terrainMap;
-        terrainMap.reserve(static_cast<size_t>(size.x) * size.y);
+        terrainMap.reserve(static_cast<size_t>(WorldSettings::nb_tiles.x) * WorldSettings::nb_tiles.y);
 
         FastNoiseLite noise;
         noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
@@ -42,10 +43,10 @@ namespace tiles::generator {
         cellularNoise.SetFractalGain(0.01f);
 
         // FIX: Utilisation du Row-Major (Y puis X) pour correspondre à l'indexation y * width + x
-        for (int y = 0; y < size.y; y++) {
-            for (int x = 0; x < size.x; x++) {
+        for (int y = 0; y < WorldSettings::nb_tiles.y; y++) {
+            for (int x = 0; x < WorldSettings::nb_tiles.x; x++) {
                 // Calcul direct de la position monde pour éviter les décalages flottants
-                sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
+                sf::Vector2f worldPos{static_cast<float>(x) * WorldSettings::tile_size.x, static_cast<float>(y) * WorldSettings::tile_size.y};
 
                 // Generator stuff -----------------------------
                 Biome b = Biome::kOcean;
@@ -81,7 +82,7 @@ namespace tiles::generator {
         return terrainMap;
     }
 
-    inline std::vector<Tile<RessourcesTiles>> SeedAndGrow(sf::Vector2i size, sf::Vector2f tileSize, std::vector<Tile<TerrainTiles>> terrain){
+    inline std::vector<Tile<RessourcesTiles>> SeedAndGrow(const std::vector<Tile<TerrainTiles>>& terrain){
 
         std::vector<Tile<RessourcesTiles>> ressourceMap;
 
@@ -91,24 +92,26 @@ namespace tiles::generator {
 
 
 
-        for (auto y = 0; size.y > y; y++) {
-            for (auto x = 0; size.x > x; x++) {
-                int index = y * size.x + x;
-                sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
+        for (auto y = 0; WorldSettings::nb_tiles.y > y; y++) {
+            for (auto x = 0; WorldSettings::nb_tiles.x > x; x++) {
+                size_t index = WorldSettings::TilePosToIdx(sf::Vector2i{x, y});
+                sf::Vector2f worldPos{static_cast<float>(x) * WorldSettings::tile_size.x, static_cast<float>(y) * WorldSettings::tile_size.y};
                 float ressourceNoiseValue = std::abs(ressourceNoise.GetNoise(worldPos.x, worldPos.y));
+
+                RessourcesTiles ressource = RessourcesTiles::kNone;
+                bool walkable = true;
+
                 if (ressourceNoiseValue >= 0.6f) {
-                    if (terrain.at(index).type == TerrainTiles::kWaterA) {
-                        ressourceMap.emplace_back(worldPos, RessourcesTiles::kNone, true);
+                    TerrainTiles current_terrain = terrain.at(index).type;
+                    if (current_terrain == TerrainTiles::kGrassB) {
+                        ressource = RessourcesTiles::kWood;
+                        walkable = false;
+                    } else if (current_terrain == TerrainTiles::kSandA || current_terrain == TerrainTiles::kSandB) {
+                        ressource = RessourcesTiles::kRock;
+                        walkable = false;
                     }
-                    else if (terrain.at(index).type == TerrainTiles::kGrassB) {
-                        ressourceMap.emplace_back(worldPos, RessourcesTiles::kWood, false);
-                    }
-                    else if (terrain.at(index).type == TerrainTiles::kSandA || terrain.at(index).type == TerrainTiles::kSandB) {
-                        ressourceMap.emplace_back(worldPos, RessourcesTiles::kRock, false);
-                    }
-                }else {
-                    ressourceMap.emplace_back(worldPos, RessourcesTiles::kNone, true);
                 }
+                ressourceMap.emplace_back(worldPos, ressource, walkable);
             }
         }
 
@@ -116,13 +119,12 @@ namespace tiles::generator {
 
     }
 
-    inline std::vector<Tile<Housing>> PlaceAHouse(sf::Vector2i size, sf::Vector2f tileSize, Housing h) {
+    inline std::vector<Tile<Housing>> PlaceAHouse(Housing h) {
         std::vector<Tile<Housing>> house;
 
-        for (auto y = 0; size.y > y; y++) {
-            for (auto x = 0; size.x > x ; x++) {
-                int index = y * size.x + x;
-                sf::Vector2f worldPos{static_cast<float>(x) * tileSize.x, static_cast<float>(y) * tileSize.y};
+        for (auto y = 0; WorldSettings::nb_tiles.y > y; y++) {
+            for (auto x = 0; WorldSettings::nb_tiles.x > x ; x++) {
+                sf::Vector2f worldPos{static_cast<float>(x) * WorldSettings::tile_size.x, static_cast<float>(y) * WorldSettings::tile_size.y};
                 switch (h) {
                     case Housing::kHunterHouse:
                         house.emplace_back(worldPos, Housing::kHunterHouse, false);

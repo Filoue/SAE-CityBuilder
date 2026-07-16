@@ -9,11 +9,13 @@
 #include "tiles/tilemap_generator.h"
 // Ton nouveau renderer
 #include "graphics/building_renderer.h"
+#include "ai/npc_manager.h"
 
-void EditMode::Setup(float tile_size, sf::Vector2f grid_offset, Tilemap& tilemap) {
+void EditMode::Setup(float tile_size, sf::Vector2f grid_offset, Tilemap& tilemap, ResourceManager& resource_manager) {
     tile_size_ = tile_size;
     grid_offset_ = grid_offset;
     tilemap_ = &tilemap;
+    resource_manager_ = &resource_manager;
     housing_ = Housing::kNone;
 
     hunterHouse_ = std::make_unique<sf::Texture>();
@@ -39,9 +41,32 @@ void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& windo
                 }
 
                 if (!occupied) {
-                    buildings_.push_back({hovered_grid_pos_, current_selection_});
-                    // On reconstruit les vertices seulement quand la liste change !
-                    Building();
+                    int wood_cost = 0;
+                    int stone_cost = 0;
+                    switch (current_selection_) {
+                        case Housing::kHunterHouse:
+                            wood_cost = 10;
+                            stone_cost = 5;
+                            break;
+                        case Housing::kMinerHouse:
+                            wood_cost = 10;
+                            stone_cost = 5;
+                            break;
+                        case Housing::kWoodCutterHouse:
+                            wood_cost = 10;
+                            stone_cost = 5;
+                            break;
+                        default:
+                            break;
+                    }
+
+                    if (resource_manager_->HasEnoughResources(wood_cost, stone_cost)) {
+                        resource_manager_->SpendResources(wood_cost, stone_cost);
+                        buildings_.push_back({hovered_grid_pos_, current_selection_});
+                        // On reconstruit les vertices seulement quand la liste change !
+                        Building();
+                        api::ai::NpcManager::GetInstance().AddNpc(1, *tilemap_, current_selection_, hovered_grid_pos_);
+                    }
                 }
             }
         }
@@ -73,10 +98,12 @@ void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& windo
 void EditMode::Update(const sf::RenderWindow& window) {
     if (!enabled_) return;
 
-    sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
-    sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos);
+    const sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
+    const sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos);
 
-    hovered_grid_pos_ = WorldToGrid(worldPos);
+    if (const auto idx = api::tiles::WorldSettings::PixelPosToIdx(worldPos)) {
+        hovered_grid_pos_ = api::tiles::WorldSettings::IdxToTilePos(*idx);
+    }
 }
 
 // Cette méthode reconstruit le VertexArray à partir du vecteur de structures 'buildings_'
@@ -85,7 +112,8 @@ void EditMode::Building() {
     building_renderer_.Clear();
 
     for (const auto& b : buildings_) {
-        sf::Vector2f pos = GridToWorld(b.gridPos);
+        const auto idx = api::tiles::WorldSettings::TilePosToIdx(b.gridPos);
+        const sf::Vector2f pos = sf::Vector2f{api::tiles::WorldSettings::IdxToPixelPos(idx)} + sf::Vector2f{api::tiles::WorldSettings::tile_size.x / 2.f, api::tiles::WorldSettings::tile_size.y / 2.f};
         float size = tile_size_;
 
         const sf::Texture* buildingTexture = nullptr;
@@ -124,7 +152,8 @@ void EditMode::Draw(sf::RenderWindow& window) {
     if (enabled_) {
         sf::RectangleShape ghost(sf::Vector2f(tile_size_, tile_size_));
         ghost.setOrigin(ghost.getSize() / 2.f);
-        ghost.setPosition(GridToWorld(hovered_grid_pos_));
+        const auto idx = api::tiles::WorldSettings::TilePosToIdx(hovered_grid_pos_);
+        ghost.setPosition(sf::Vector2f{api::tiles::WorldSettings::IdxToPixelPos(idx)} + sf::Vector2f{api::tiles::WorldSettings::tile_size.x / 2.f, api::tiles::WorldSettings::tile_size.y / 2.f});
 
         if (Placable(tile)) {
             // 1. On récupère le pointeur brut de la texture
@@ -152,19 +181,6 @@ void EditMode::Draw(sf::RenderWindow& window) {
             window.draw(ghost);
         }
     }
-}
-
-
-sf::Vector2i EditMode::WorldToGrid(sf::Vector2f world_pos) const {
-    float adjusted_x = world_pos.x - grid_offset_.x;
-    float adjusted_y = world_pos.y - grid_offset_.y;
-    return sf::Vector2i(static_cast<int>(std::floor(adjusted_x / tile_size_)),
-                        static_cast<int>(std::floor(adjusted_y / tile_size_)));
-}
-
-sf::Vector2f EditMode::GridToWorld(sf::Vector2i grid_pos) const {
-    return sf::Vector2f(static_cast<float>(grid_pos.x) * tile_size_ + tile_size_ / 2.f,
-                        static_cast<float>(grid_pos.y) * tile_size_ + tile_size_ / 2.f) + grid_offset_;
 }
 
 bool EditMode::Placable(TerrainTiles tile) {

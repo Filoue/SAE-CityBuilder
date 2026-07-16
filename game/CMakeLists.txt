@@ -3,7 +3,7 @@
 file(GLOB_RECURSE SRC_FILES src/*.cc)
 file(GLOB_RECURSE HEADER_FILES include/*.h)
 
-add_library(game ${SRC_FILES} ${HEADER_FILES})
+add_library(game ${SRC_FILES} src/resource_manager.cc ${HEADER_FILES} include/resource_manager.h)
 
 target_include_directories(game PUBLIC include/)
 

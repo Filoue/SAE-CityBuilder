@@ -11,6 +11,8 @@
 #include "game_types.h"
 #include "tilemap.h"
 #include "graphics/building_renderer.h"
+#include "worldSettings/world_settings.h"
+#include "resource_manager.h"
 
 class Tilemap; // Forward declaration
 
@@ -21,7 +23,7 @@ public:
         Housing type;
     };
 
-    void Setup(float tile_size, sf::Vector2f grid_offset, Tilemap& tilemap);
+    void Setup(float tile_size, sf::Vector2f grid_offset, Tilemap& tilemap, ResourceManager& resource_manager);
     void HandleEvent(const sf::Event& event, const sf::RenderWindow& window);
     void Update(const sf::RenderWindow& window);void Building();
     void Draw(sf::RenderWindow& window);
@@ -30,9 +32,9 @@ public:
     bool IsEnabled() const { return enabled_; }
     void Toggle() { enabled_ = !enabled_; }
 
+    std::vector<PlacedBuilding> buildings_;
+
 private:
-    sf::Vector2i WorldToGrid(sf::Vector2f world_pos) const;
-    sf::Vector2f GridToWorld(sf::Vector2i grid_pos) const;
     bool Placable(TerrainTiles tile);
 
     int selection = 0;
@@ -45,7 +47,7 @@ private:
     std::unique_ptr<sf::Texture> minerHouse_;
     std::unique_ptr<sf::Texture> woodCutterHouse_;
 
-
+    ResourceManager* resource_manager_;
 
 
     bool enabled_ = false;
@@ -53,7 +55,6 @@ private:
     sf::Vector2f grid_offset_ = {0.f, 0.f};
     Housing current_selection_ = Housing::kHunterHouse;
     sf::Vector2i hovered_grid_pos_;
-    std::vector<PlacedBuilding> buildings_;
     Tilemap* tilemap_;
     Housing housing_;
 };

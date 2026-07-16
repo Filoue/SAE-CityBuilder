@@ -11,6 +11,7 @@
 // However, AStar needs the full definition of Tilemap to access its members (terrain, gridSize_).
 // So, we will include the full header here.
 #include "tilemap.h" // AStar needs to know about Tilemap
+#include "worldSettings/world_settings.h"
 
 namespace api::motion {
 
@@ -39,15 +40,15 @@ public:
     static std::vector<sf::Vector2i> FindPath(
         const sf::Vector2i &start_pos,
         const sf::Vector2i &end_pos,
-        const Tilemap&tilemap_instance
+        const Tilemap& tilemap_instance
     );
 
 
     template <class Predicate>
     static sf::Vector2i FindClosestTarget(sf::Vector2i start_pos,
-        const Tilemap&tilemap_instance,
+        const Tilemap& tilemap_instance,
         Predicate criteria) {
-        const sf::Vector2i& grid_size = tilemap_instance.gridSize_;
+        const sf::Vector2i& grid_size = api::tiles::WorldSettings::nb_tiles;
 
         //Sécurité initiale
         if (start_pos.x < 0 || start_pos.x >= grid_size.x ||
@@ -64,7 +65,7 @@ public:
         std::queue<sf::Vector2i> open_set;
 
         open_set.push(start_pos);
-        visited[start_pos.y * grid_size.x + start_pos.x] = true;
+        visited[api::tiles::WorldSettings::TilePosToIdx(start_pos)] = true;
 
         struct Direction { int dx; int dy; };
         static constexpr Direction kDirection[] = { {-1,0}, {1,0}, {0, -1}, {0,1} };
@@ -81,7 +82,7 @@ public:
                     continue;
                 }
 
-                int index =+ neighbor.y * grid_size.x + neighbor.x;
+                size_t index = api::tiles::WorldSettings::TilePosToIdx(neighbor);
                 if (visited[index]) {
                     continue;
                 }
@@ -103,10 +104,10 @@ private:
     // Helper functions (static members as they don't depend on AStar instance state)
     static int CalculateHeuristic(const sf::Vector2i &pos1, const sf::Vector2i &pos2);
     static float CalculateDistance(sf::Vector2i pos1, sf::Vector2i pos2);
-    static void GetNeighbors(sf::Vector2i pos, const sf::Vector2i& grid_size, std::vector<sf::Vector2i>& neighbors);
-    static bool IsValidAndWalkable(const sf::Vector2i &pos, const Tilemap&tilemap_instance);
+    static void GetNeighbors(sf::Vector2i pos, std::vector<sf::Vector2i>& neighbors);
+    static bool IsValidAndWalkable(const sf::Vector2i &pos, const Tilemap& tilemap_instance);
     static std::vector<sf::Vector2i> ReconstructPath(
-        const std::vector<int>&came_from,int current_index,const sf::Vector2i&grid_size
+        const std::vector<int>&came_from,int current_index
     );
 };
 

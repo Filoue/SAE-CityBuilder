@@ -19,8 +19,8 @@ int AStar::CalculateHeuristic(const sf::Vector2i& pos1,const sf::Vector2i& pos2)
 
 bool AStar::IsValidAndWalkable(const sf::Vector2i& pos, const Tilemap& tilemap_instance) {
     // Sécurité : vérifie à nouveau les limites de la grille
-    if (pos.x < 0 || pos.x >= tilemap_instance.gridSize_.x ||
-        pos.y < 0 || pos.y >= tilemap_instance.gridSize_.y) {
+    if (pos.x < 0 || pos.x >= api::tiles::WorldSettings::nb_tiles.x ||
+        pos.y < 0 || pos.y >= api::tiles::WorldSettings::nb_tiles.y) {
         return false;
     }
 
@@ -46,15 +46,14 @@ bool AStar::IsValidAndWalkable(const sf::Vector2i& pos, const Tilemap& tilemap_i
 
 std::vector<sf::Vector2i> AStar::ReconstructPath(
     const std::vector<int>& came_from,
-    int current_index,
-    const sf::Vector2i& grid_size) {
+    int current_index) {
 
     // Reconstruit le chemin en partant de la fin (Target) vers le début (Start)
     std::vector<sf::Vector2i> total_path;
     total_path.reserve(32);
 
     while (current_index != -1) {
-        total_path.push_back({current_index % grid_size.x, current_index / grid_size.x});
+        total_path.push_back(api::tiles::WorldSettings::IdxToTilePos(current_index));
         current_index = came_from[current_index];
     }
     
@@ -74,10 +73,10 @@ std::vector<sf::Vector2i> AStar::FindPath(
     if (!IsValidAndWalkable(start_pos, tilemap_instance) || !IsValidAndWalkable(end_pos, tilemap_instance)) {
         return {}; 
     }
-    const sf::Vector2i& grid_size = tilemap_instance.gridSize_;
+    const sf::Vector2i& grid_size = api::tiles::WorldSettings::nb_tiles;
     int total_cells = grid_size.x * grid_size.y;
-    int start_index = start_pos.y * grid_size.x + start_pos.x;
-    int end_index = end_pos.y * grid_size.x + end_pos.x;
+    int start_index = api::tiles::WorldSettings::TilePosToIdx(start_pos);
+    int end_index = api::tiles::WorldSettings::TilePosToIdx(end_pos);
 
     // Liste des nœuds à explorer, triée par f_score (coût total estimé) le plus bas
     std::priority_queue<AStarNode, std::vector<AStarNode>, std::greater<AStarNode>> open_set;
@@ -99,11 +98,11 @@ std::vector<sf::Vector2i> AStar::FindPath(
         AStarNode current_node = open_set.top();
         open_set.pop();
 
-        int current_index = current_node.position.y * grid_size.x + current_node.position.x;
+        int current_index = api::tiles::WorldSettings::TilePosToIdx(current_node.position);
 
         // // Condition de victoire : on a atteint la destination
         if (current_index == end_index) {
-            return ReconstructPath(came_from, current_index, grid_size);
+            return ReconstructPath(came_from, current_index);
         }
 
         if (closed_set[current_index]) continue;
@@ -118,7 +117,7 @@ std::vector<sf::Vector2i> AStar::FindPath(
                 continue;
             }
 
-            int neighbor_index = neighbor_pos.y * grid_size.x + neighbor_pos.x;
+            int neighbor_index = api::tiles::WorldSettings::TilePosToIdx(neighbor_pos);
 
             if (closed_set[neighbor_index]) continue;
 
@@ -134,7 +133,7 @@ std::vector<sf::Vector2i> AStar::FindPath(
             if (tentative_g_score < g_scores[neighbor_index]) {
                 // Enregistre ce chemin comme le meilleur pour l'instant
                 came_from[neighbor_index] = current_index;
-                g_scores[neighbor_index = tentative_g_score];
+                g_scores[neighbor_index] = tentative_g_score;
 
                 // Calcule l'estimation H et ajoute le voisin à la liste d'exploration
                 float neighbor_h_score = CalculateHeuristic(neighbor_pos, end_pos);

@@ -1,8 +1,5 @@
-﻿//
-// Created by petit on 04.06.2026.
-//
-
-#include "ai/normalize_npc.h"
+﻿#include "ai/normalize_npc.h"
+#include "worldSettings/world_settings.h"
 
 #include <cmath>
 #include <print>
@@ -13,17 +10,19 @@
 #include "ai/bt_node_factory.h"
 #include "ai/bt_action.h"
 #include "ai/bt_sequence.h"
+#include "ai/bt_selector.h"
 
 
 namespace api::ai {
     using core::ai::behaviour_tree::Status;
 
-    void NormalizeNpc::Setup(std::string_view sprite_path, sf::Vector2i world_size, sf::Vector2i start_grid_position,
-                               const Tilemap& tilemap, float tile_size, sf::Vector2f grid_offset) {
-        world_size_ = world_size;
+    void NormalizeNpc::Setup(std::string_view sprite_path, sf::Vector2i start_grid_position,
+                               const Tilemap& tilemap, ResourceManager& resource_manager, Housing home) {
         tilemap_ptr_ = &tilemap; // Store pointer to the Tilemap
-        tile_size_ = tile_size;
-        grid_offset_ = grid_offset;
+        resource_manager_ = &resource_manager;
+        home_ = home;
+        home_pos_ = start_grid_position;
+        texture_ = std::make_unique<sf::Texture>();
 
         if (texture_->loadFromFile(std::string(sprite_path))) {
             sprite_ = sf::Sprite(*texture_);
@@ -32,21 +31,32 @@ namespace api::ai {
         }
 
         // Correctly set initial motor position to the center of the start grid tile
-        motor_.SetPosition(GridToWorld(start_grid_position));
-        motor_.SetDestination(GridToWorld(start_grid_position)); // Initial destination is also the start position
+        sf::Vector2f start_pos = sf::Vector2f(tiles::WorldSettings::IdxToPixelPos(tiles::WorldSettings::TilePosToIdx(start_grid_position))) + sf::Vector2f(tiles::WorldSettings::tile_size.x / 2.f, tiles::WorldSettings::tile_size.y / 2.f);
+        motor_.SetPosition(start_pos);
+        motor_.SetDestination(start_pos); // Initial destination is also the start position
         motor_.SetSpeed(kSpeed);
 
         using namespace core::ai::behaviour_tree;
         using namespace node_factory;
 
-        auto pick = MakeAction([this]{return GetRessourceToGrid();});
-        auto move = MakeAction([this]{return MoveToDestination();});
+        auto goToResource = MakeAction([this]{return GoToResource();});
+        auto goHome = MakeAction([this]{return GoHome();});
+        auto collectResource = MakeAction([this]{return CollectResource();});
+        auto depositResource = MakeAction([this]{return DepositResource();});
 
-        auto wanderSequence = std::make_unique<SequenceNode>();
-        wanderSequence->AddChild(std::move(pick));
-        wanderSequence->AddChild(std::move(move));
+        auto collectSequence = std::make_unique<SequenceNode>();
+        collectSequence->AddChild(std::move(goToResource));
+        collectSequence->AddChild(std::move(collectResource));
 
-        bt_root_ = std::move(wanderSequence);
+        auto depositSequence = std::make_unique<SequenceNode>();
+        depositSequence->AddChild(std::move(goHome));
+        depositSequence->AddChild(std::move(depositResource));
+
+        auto rootSelector = std::make_unique<SelectorNode>();
+        rootSelector->AddChild(std::move(collectSequence));
+        rootSelector->AddChild(std::move(depositSequence));
+
+        bt_root_ = std::move(rootSelector);
     }
 
     void NormalizeNpc::Update(float dt){
@@ -69,40 +79,88 @@ namespace api::ai {
         return motor_.GetPosition();
     }
 
-    sf::Vector2f NormalizeNpc::GridToWorld(sf::Vector2i grid_pos) const {
-        return sf::Vector2f(static_cast<float>(grid_pos.x) * tile_size_ + tile_size_ / 2.f,
-                            static_cast<float>(grid_pos.y) * tile_size_ + tile_size_ / 2.f) + grid_offset_;
-    }
+    Status NormalizeNpc::GoToResource() {
+        if (has_resource_) {
+            return Status::kFailure;
+        }
 
-    sf::Vector2i NormalizeNpc::WorldToGrid(sf::Vector2f world_pos) const {
-        // Ensure world_pos is relative to grid_offset before dividing by tile_size_
-        // Add a small epsilon to avoid floating point issues near tile boundaries
-        float adjusted_x = world_pos.x - grid_offset_.x;
-        float adjusted_y = world_pos.y - grid_offset_.y;
+        if (!current_path_.empty()) {
+            return Status::kSuccess;
+        }
 
-        // Use std::floor to correctly handle negative coordinates if they were possible,
-        // but for grid indices, static_cast<int> is usually fine for positive values.
-        return sf::Vector2i(static_cast<int>(std::floor(adjusted_x / tile_size_)),
-                            static_cast<int>(std::floor(adjusted_y / tile_size_)));
-    }
+        sf::Vector2i position = tiles::WorldSettings::IdxToTilePos(tiles::WorldSettings::PixelPosToIdx(motor_.GetPosition()).value_or(0));
 
-    Status NormalizeNpc::GetRessourceToGrid() {
+        RessourcesTiles target_resource;
+        switch (home_) {
+            case Housing::kWoodCutterHouse:
+                target_resource = RessourcesTiles::kWood;
+                break;
+            case Housing::kMinerHouse:
+                target_resource = RessourcesTiles::kRock;
+                break;
+            default:
+                return Status::kFailure;
+        }
 
-        if (!current_path_.empty()) return Status::kSuccess;
-
-        sf::Vector2i position = WorldToGrid(motor_.GetPosition());
-
-        sf::Vector2i closeest_rock = motion::AStar::FindClosestTarget(position, *tilemap_ptr_, [&](sf::Vector2i pos) {
-            return tilemap_ptr_->GetRessourcesTileType(pos) == RessourcesTiles::kRock;
+        sf::Vector2i closest_resource = motion::AStar::FindClosestTarget(position, *tilemap_ptr_, [&](sf::Vector2i pos) {
+            auto r = tilemap_ptr_->GetRessourcesTileType(pos);
+            if (r) {
+                return r == target_resource;
+            }
+            return false;
         });
 
-        if (closeest_rock.x != -1 && closeest_rock.y != -1) {
-            SetTargetGridPosition(closeest_rock);
+        if (closest_resource.x != -1 && closest_resource.y != -1) {
+            SetTargetGridPosition(closest_resource);
+            target_resource_ = target_resource;
             return Status::kSuccess;
         }
 
         return  Status::kFailure;
+    }
 
+    Status NormalizeNpc::GoHome() {
+        if (!has_resource_) {
+            return Status::kFailure;
+        }
+
+        if (!current_path_.empty()) {
+            return Status::kSuccess;
+        }
+
+        SetTargetGridPosition(home_pos_);
+        return Status::kSuccess;
+    }
+
+    Status NormalizeNpc::CollectResource() {
+        if (motor_.RemainingDistance() > 0.01f) {
+            return Status::kRunning;
+        }
+
+        // Remove the resource from the map
+        // This is a placeholder. A more robust solution would be to have a way to modify the tilemap.
+        has_resource_ = true;
+        return Status::kSuccess;
+    }
+
+    Status NormalizeNpc::DepositResource() {
+        if (motor_.RemainingDistance() > 0.01f) {
+            return Status::kRunning;
+        }
+
+        switch (target_resource_) {
+            case RessourcesTiles::kWood:
+                resource_manager_->AddWood(1);
+                break;
+            case RessourcesTiles::kRock:
+                resource_manager_->AddStone(1);
+                break;
+            default:
+                break;
+        }
+
+        has_resource_ = false;
+        return Status::kSuccess;
     }
 
     void NormalizeNpc::SetTargetGridPosition(sf::Vector2i grid_pos) {
@@ -113,11 +171,11 @@ namespace api::ai {
         }
 
         target_grid_position_ = grid_pos;
-        sf::Vector2i start_grid_pos = WorldToGrid(motor_.GetPosition());
+        sf::Vector2i start_grid_pos = tiles::WorldSettings::IdxToTilePos(tiles::WorldSettings::PixelPosToIdx(motor_.GetPosition()).value_or(0));
 
         // Ensure start_grid_pos is within bounds before pathfinding
-        if (start_grid_pos.x < 0 || start_grid_pos.x >= static_cast<int>(tilemap_ptr_->gridSize_.x) ||
-            start_grid_pos.y < 0 || start_grid_pos.y >= static_cast<int>(tilemap_ptr_->gridSize_.y)) {
+        if (start_grid_pos.x < 0 || start_grid_pos.x >= static_cast<int>(api::tiles::WorldSettings::nb_tiles.x) ||
+            start_grid_pos.y < 0 || start_grid_pos.y >= static_cast<int>(api::tiles::WorldSettings::nb_tiles.y)) {
             current_path_.clear();
             current_path_index_ = 0;
             return;
@@ -133,80 +191,11 @@ namespace api::ai {
             }else {
                 current_path_index_ = 0;
             }
-            motor_.SetDestination(GridToWorld(current_path_[current_path_index_]));
+            motor_.SetDestination(sf::Vector2f(tiles::WorldSettings::IdxToPixelPos(tiles::WorldSettings::TilePosToIdx(current_path_[current_path_index_]))) + sf::Vector2f(tiles::WorldSettings::tile_size.x / 2.f, tiles::WorldSettings::tile_size.y / 2.f));
         } else {
             // If no path found, stay at current position
             motor_.SetDestination(motor_.GetPosition());
             // Do NOT call PickRandomDestination() here. Let the BT handle retrying.
         }
     }
-
-    Status NormalizeNpc::PickRandomDestination(){
-        if (!tilemap_ptr_) {
-            return Status::kFailure;
-        }
-
-        // Get grid dimensions from the tilemap
-        int grid_width = static_cast<int>(tilemap_ptr_->gridSize_.x);
-        int grid_height = static_cast<int>(tilemap_ptr_->gridSize_.y);
-
-        if (grid_width <= 0 || grid_height <= 0) {
-            return Status::kFailure;
-        }
-
-        std::uniform_int_distribution<int> x_dist(0, grid_width - 1);
-        std::uniform_int_distribution<int> y_dist(0, grid_height - 1);
-
-        sf::Vector2i random_grid_pos;
-        bool found_walkable = false;
-        // Try to find a walkable random position
-        for (int i = 0; i < 100; ++i) { // Limit attempts to avoid infinite loop
-            random_grid_pos = {x_dist(rng_), y_dist(rng_)};
-            // Use Tilemap's public method to check walkability
-            TerrainTiles tile_type = tilemap_ptr_->GetTerrainTileType(random_grid_pos);
-            if (tile_type != TerrainTiles::kWaterA &&
-                tile_type != TerrainTiles::kWaterB) { // kForest is now considered walkable
-                found_walkable = true;
-                break;
-            }
-        }
-
-        if (found_walkable) {
-            SetTargetGridPosition(random_grid_pos);
-            if (current_path_.empty()) { // If SetTargetGridPosition failed to find a path
-                return Status::kFailure;
-            }
-            return Status::kSuccess;
-        } else {
-            return Status::kFailure;
-        }
-    }
-
-    Status NormalizeNpc::MoveToDestination() {
-        if (current_path_.empty()) {
-            return Status::kFailure; // No path to follow
-        }
-
-        // Check if motor has reached the current waypoint
-        if (motor_.RemainingDistance() <= 0.01f) { // Reduced epsilon for more precise waypoint arrival
-            current_path_index_++;
-
-            if (current_path_index_ < current_path_.size()) {
-                // Move to the next waypoint
-                motor_.SetDestination(GridToWorld(current_path_[current_path_index_]));
-                return Status::kRunning;
-            } else {
-                // Reached the end of the path
-                current_path_.clear();
-                current_path_index_ = 0;
-                return Status::kSuccess;
-            }
-        }
-        return Status::kRunning; // Still moving towards current waypoint
-    }
-
-    Status NormalizeNpc::Locked() {
-        return Status::kSuccess;
-    }
-
 }

@@ -3,22 +3,24 @@
 
 #include <vector>
 #include "ai/normalize_npc.h"
+#include "resource_manager.h"
 
 namespace api::ai {
 
 class NpcManager {
  public:
-    NpcManager() = default;
-    void SetupManager(int num_npcs, sf::Vector2i world_size,const Tilemap& _map, float _tile_size, sf::Vector2f _grid_offset);
+    static NpcManager& GetInstance();
+    void SetupManager(int num_npcs, const Tilemap& _map, ResourceManager& resource_manager, sf::Vector2i spawn_pos);
     void Update(float dt)const;
-    void AddNpc(int num_npcs, sf::Vector2i world_size, const Tilemap&_map, float _tile_size, sf::Vector2f _grid_offset);
+    void AddNpc(int num_npcs, const Tilemap&_map, Housing home, sf::Vector2i spawn_pos);
     void Draw(sf::RenderWindow& window)const;
  private:
-    sf::Vector2i set_start_position(sf::Vector2i world_size);
+    NpcManager() = default;
 
   std::vector<std::unique_ptr<NormalizeNpc>> npcs_;
     sf::Vector2f startPosition_;
     std::mt19937 rng_;
+    ResourceManager* resource_manager_ = nullptr;
 };
 
 }  // namespace api::ai
