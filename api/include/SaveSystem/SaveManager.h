@@ -16,7 +16,7 @@ inline JsonValue ToJson(const float v) { return {v}; }
 inline JsonValue ToJson(const double v) { return {v}; }
 inline JsonValue ToJson(const bool v) { return {v}; }
 inline JsonValue ToJson(const std::string& v) { return {v}; }
-inline JsonValue ToJson(const api::ai::NpcManager& v) { return {v};}
+//inline JsonValue ToJson(const api::ai::NpcManager& v) { return {v};}
 
 template<typename T>
 JsonValue ToJson(const std::vector<T>& v) {
@@ -31,7 +31,6 @@ inline void FromJson(const JsonValue& j, float& v) { v = static_cast<float>(j.As
 inline void FromJson(const JsonValue& j, double& v) { v = j.AsDouble(); }
 inline void FromJson(const JsonValue& j, bool& v) { v = j.AsBool(); }
 inline void FromJson(const JsonValue& j, std::string& v) { v = j.AsString(); }
-inline void FromJson(const JsonValue& j, api::ai::NpcManager& v) { v = j.AsObject(); }
 
 template<typename T>
 void FromJson(const JsonValue& j, std::vector<T>& v) {

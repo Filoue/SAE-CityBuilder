@@ -1,4 +1,4 @@
-GIT#pragma once
+#pragma once
 #include <string>
 #include <vector>
 #include <map>
