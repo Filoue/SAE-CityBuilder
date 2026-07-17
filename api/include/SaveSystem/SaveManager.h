@@ -6,37 +6,21 @@
 #include <sstream>
 #include <iostream>
 
-// ============================================================
-// SaveManager : systeme de sauvegarde generique, ZERO dependance
-// externe. Juste JsonValue.h + SaveManager.h a copier dans ton
-// projet.
-//
-// Usage :
-//   SaveManager save("save.json");
-//   save.Set("playerHP", 80);
-//   save.Set("playerName", std::string("Petitfiloue"));
-//   save.SaveToFile();
-//   save.LoadFromFile();
-//   int hp = save.Get<int>("playerHP", 100);
-//
-// Pour tes propres structs (ex: PlayerData, BossSaveState),
-// ecris juste une fonction ToJson() et FromJson() pour ce type
-// (voir main_example.cpp). Pas de macro, pas de magie.
-// ============================================================
+
 
 // --- Conversions pour les types de base ---
-inline JsonValue ToJson(int v) { return JsonValue(v); }
-inline JsonValue ToJson(float v) { return JsonValue(v); }
-inline JsonValue ToJson(double v) { return JsonValue(v); }
-inline JsonValue ToJson(bool v) { return JsonValue(v); }
-inline JsonValue ToJson(const std::string& v) { return JsonValue(v); }
+inline JsonValue ToJson(const int v) { return {v}; }
+inline JsonValue ToJson(const float v) { return {v}; }
+inline JsonValue ToJson(const double v) { return {v}; }
+inline JsonValue ToJson(const bool v) { return {v}; }
+inline JsonValue ToJson(const std::string& v) { return {v}; }
 
 template<typename T>
 JsonValue ToJson(const std::vector<T>& v) {
     JsonValue::Array arr;
     arr.reserve(v.size());
     for (const auto& item : v) arr.push_back(ToJson(item));
-    return JsonValue(arr);
+    return {arr};
 }
 
 inline void FromJson(const JsonValue& j, int& v) { v = j.AsInt(); }

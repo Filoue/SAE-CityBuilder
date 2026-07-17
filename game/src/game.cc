@@ -52,9 +52,7 @@ namespace game {
             edit_mode.buildings_.push_back({{10, 10}, Housing::kMinerHouse});
             edit_mode.Building();
 
-            save.Set("Tilemap", map_);
-            save.Set("edit_mode", edit_mode);
-            save.Set("ressource", resource_manager);
+
         }
 
         void ToggleFullscreen(){
