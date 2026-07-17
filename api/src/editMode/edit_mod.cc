@@ -22,9 +22,9 @@ void EditMode::Setup(float tile_size, sf::Vector2f grid_offset, Tilemap& tilemap
     minerHouse_ = std::make_unique<sf::Texture>();
     woodCutterHouse_ = std::make_unique<sf::Texture>();
 
-    hunterHouse_->loadFromFile("_assets/kenney_medieval-rts/PNG/Default size/Structure/medievalStructure_01.png");
-    minerHouse_->loadFromFile("_assets/kenney_medieval-rts/PNG/Default size/Structure/medievalStructure_02.png");
-    woodCutterHouse_->loadFromFile("_assets/kenney_medieval-rts/PNG/Default size/Structure/medievalStructure_03.png");
+    hunterHouse_->loadFromFile("_assets/kenney_medieval-rts/PNG/Default size/Structure/medievalStructure_03.png");
+    minerHouse_->loadFromFile("_assets/kenney_medieval-rts/PNG/Default size/Structure/medievalStructure_01.png");
+    woodCutterHouse_->loadFromFile("_assets/kenney_medieval-rts/PNG/Default size/Structure/medievalStructure_02.png");
 }
 
 void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& window) {
@@ -45,12 +45,12 @@ void EditMode::HandleEvent(const sf::Event& event, const sf::RenderWindow& windo
                     int stone_cost = 0;
                     switch (current_selection_) {
                         case Housing::kHunterHouse:
-                            wood_cost = 10;
-                            stone_cost = 5;
+                            wood_cost = 100;
+                            stone_cost = 500;
                             break;
                         case Housing::kMinerHouse:
-                            wood_cost = 10;
-                            stone_cost = 5;
+                            wood_cost = 5;
+                            stone_cost = 10;
                             break;
                         case Housing::kWoodCutterHouse:
                             wood_cost = 10;

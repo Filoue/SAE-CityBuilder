@@ -6,8 +6,7 @@
 #include "ai/normalize_npc.h"
 #include "ai/npc_manager.h"
 #include "graphics/camera.h"
-#include "graphics/tilemap_renderer.h"
-#include "graphics/tilesheet.h"
+#include "SaveSystem/SaveManager.h"
 #include "editMode/edit_mod.h"
 #include "worldSettings/world_settings.h"
 #include "resource_manager.h"
@@ -42,13 +41,18 @@ namespace game {
             edit_mode.Setup(api::tiles::WorldSettings::tile_size.x, sf::Vector2f(api::tiles::WorldSettings::tile_size), map_, resource_manager);
         
             // Add initial resources
-            resource_manager.AddWood(10);
-            resource_manager.AddStone(5);
+            resource_manager.AddWood(5);
+            resource_manager.AddStone(10);
 
             // Add initial houses
             edit_mode.buildings_.push_back({{5, 5}, Housing::kWoodCutterHouse});
             edit_mode.buildings_.push_back({{10, 10}, Housing::kMinerHouse});
             edit_mode.Building();
+
+            SaveManager save("save.json");
+            save.Set("Tilemap", map_);
+            save.Set("edit_mode", edit_mode);
+            save.Set("ressource", resource_manager);
         }
 
         void ToggleFullscreen(){
