@@ -1,4 +1,5 @@
 ﻿#include <optional>
+#include <filesystem>
 #include "SFML/Graphics.hpp"
 #include "game.h"
 
@@ -32,6 +33,8 @@ namespace game {
         Tilemap map_;
         graphics::Camera camera_;
 
+        SaveManager save("save.json");
+
         void Setup(){
             // Create the main window
             window_.create(sf::VideoMode::getDesktopMode(), "SFML window", sf::State::Fullscreen);
@@ -49,7 +52,6 @@ namespace game {
             edit_mode.buildings_.push_back({{10, 10}, Housing::kMinerHouse});
             edit_mode.Building();
 
-            SaveManager save("save.json");
             save.Set("Tilemap", map_);
             save.Set("edit_mode", edit_mode);
             save.Set("ressource", resource_manager);
@@ -70,7 +72,11 @@ namespace game {
 
     void Loop(){
 
-        Setup();
+        if (std::filesystem::exists("save.json")) {
+            save.LoadFromFile("save.json");
+        }else {
+            Setup();
+        }
 
         // Start the game loop
         while (window_.isOpen()) {

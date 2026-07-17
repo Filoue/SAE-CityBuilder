@@ -1,68 +1,89 @@
 #pragma once
+#include "JsonValue.h"
 #include <string>
+#include <vector>
 #include <fstream>
+#include <sstream>
 #include <iostream>
-#include <nlohmann/json.hpp>
 
 // ============================================================
-// SaveManager : systeme de sauvegarde generique en JSON
-// ============================================================
+// SaveManager : systeme de sauvegarde generique, ZERO dependance
+// externe. Juste JsonValue.h + SaveManager.h a copier dans ton
+// projet.
+//
 // Usage :
 //   SaveManager save("save.json");
 //   save.Set("playerHP", 80);
 //   save.Set("playerName", std::string("Petitfiloue"));
-//   save.Set("unlockedLevels", std::vector<int>{1, 2, 3});
 //   save.SaveToFile();
-//
 //   save.LoadFromFile();
-//   int hp = save.Get<int>("playerHP", 100); // 100 = valeur par defaut
+//   int hp = save.Get<int>("playerHP", 100);
 //
-// Marche aussi avec des structs/classes perso, voir plus bas
-// la macro NLOHMANN_DEFINE_TYPE_INTRUSIVE.
+// Pour tes propres structs (ex: PlayerData, BossSaveState),
+// ecris juste une fonction ToJson() et FromJson() pour ce type
+// (voir main_example.cpp). Pas de macro, pas de magie.
 // ============================================================
+
+// --- Conversions pour les types de base ---
+inline JsonValue ToJson(int v) { return JsonValue(v); }
+inline JsonValue ToJson(float v) { return JsonValue(v); }
+inline JsonValue ToJson(double v) { return JsonValue(v); }
+inline JsonValue ToJson(bool v) { return JsonValue(v); }
+inline JsonValue ToJson(const std::string& v) { return JsonValue(v); }
+
+template<typename T>
+JsonValue ToJson(const std::vector<T>& v) {
+    JsonValue::Array arr;
+    arr.reserve(v.size());
+    for (const auto& item : v) arr.push_back(ToJson(item));
+    return JsonValue(arr);
+}
+
+inline void FromJson(const JsonValue& j, int& v) { v = j.AsInt(); }
+inline void FromJson(const JsonValue& j, float& v) { v = static_cast<float>(j.AsDouble()); }
+inline void FromJson(const JsonValue& j, double& v) { v = j.AsDouble(); }
+inline void FromJson(const JsonValue& j, bool& v) { v = j.AsBool(); }
+inline void FromJson(const JsonValue& j, std::string& v) { v = j.AsString(); }
+
+template<typename T>
+void FromJson(const JsonValue& j, std::vector<T>& v) {
+    v.clear();
+    for (const auto& item : j.AsArray()) {
+        T elem{};
+        FromJson(item, elem);
+        v.push_back(std::move(elem));
+    }
+}
 
 class SaveManager {
 public:
-    using json = nlohmann::json;
+    SaveManager() : m_data(JsonValue::Object{}) {}
+    explicit SaveManager(std::string filePath)
+        : m_data(JsonValue::Object{}), m_filePath(std::move(filePath)) {}
 
-    SaveManager() = default;
-    explicit SaveManager(std::string filePath) : m_filePath(std::move(filePath)) {}
-
-    // Stocke n'importe quelle valeur : int, float, string, bool,
-    // vector<T>, map<string,T>, ou un objet perso qui a to_json/from_json.
     template<typename T>
     void Set(const std::string& key, const T& value) {
-        m_data[key] = value;
+        m_data[key] = ToJson(value);
     }
 
-    // Recupere une valeur. Si la cle n'existe pas ou que le type
-    // ne correspond pas, renvoie defaultValue au lieu de crasher.
     template<typename T>
     T Get(const std::string& key, const T& defaultValue = T{}) const {
-        if (!m_data.contains(key)) {
-            return defaultValue;
-        }
+        const JsonValue* found = m_data.Find(key);
+        if (!found) return defaultValue;
         try {
-            return m_data.at(key).get<T>();
-        } catch (const json::exception& e) {
+            T result{};
+            FromJson(*found, result);
+            return result;
+        } catch (const std::exception& e) {
             std::cerr << "[SaveManager] Erreur lecture cle '" << key << "': " << e.what() << "\n";
             return defaultValue;
         }
     }
 
-    bool Has(const std::string& key) const {
-        return m_data.contains(key);
-    }
+    bool Has(const std::string& key) const { return m_data.Contains(key); }
+    void Remove(const std::string& key) { m_data.Erase(key); }
+    void Clear() { m_data = JsonValue(JsonValue::Object{}); }
 
-    void Remove(const std::string& key) {
-        m_data.erase(key);
-    }
-
-    void Clear() {
-        m_data.clear();
-    }
-
-    // Sauvegarde tout le contenu dans un fichier .json (joli et indente)
     bool SaveToFile(const std::string& filePath = "") const {
         const std::string path = filePath.empty() ? m_filePath : filePath;
         std::ofstream file(path);
@@ -70,11 +91,10 @@ public:
             std::cerr << "[SaveManager] Impossible d'ecrire dans: " << path << "\n";
             return false;
         }
-        file << m_data.dump(4);
+        file << m_data.Dump();
         return true;
     }
 
-    // Charge un fichier .json existant
     bool LoadFromFile(const std::string& filePath = "") {
         const std::string path = filePath.empty() ? m_filePath : filePath;
         std::ifstream file(path);
@@ -82,20 +102,21 @@ public:
             std::cerr << "[SaveManager] Fichier introuvable: " << path << "\n";
             return false;
         }
+        std::stringstream buffer;
+        buffer << file.rdbuf();
         try {
-            file >> m_data;
-        } catch (const json::parse_error& e) {
+            m_data = JsonValue::Parse(buffer.str());
+        } catch (const std::exception& e) {
             std::cerr << "[SaveManager] JSON invalide dans " << path << ": " << e.what() << "\n";
             return false;
         }
         return true;
     }
 
-    // Acces direct au json brut si besoin de trucs plus avances
-    const json& Raw() const { return m_data; }
-    json& Raw() { return m_data; }
+    const JsonValue& Raw() const { return m_data; }
+    JsonValue& Raw() { return m_data; }
 
 private:
-    json m_data;
+    JsonValue m_data;
     std::string m_filePath = "save.json";
 };
